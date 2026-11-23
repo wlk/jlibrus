@@ -2,7 +2,7 @@
 quarkus = "3.40.1"
 opentelemetry = "1.67.0"
 # Security pins for transitive dependencies that plugins or the Quarkus platform hold back (see docs/ub-log.md).
-jacksonPatched = "2.22.4"
+jacksonPatched = "2.23.0"
 guavaPatched = "33.8.0-jre"
 plexusUtilsPatched = "4.0.3"
 orgJsonPatched = "20260814"
