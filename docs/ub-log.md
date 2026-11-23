@@ -40,3 +40,4 @@ Chronological record of actions and the reason for each.
 | 34 | Survivors exposed dead code (redundant cookie filters, unused method, impossible null checks) - deleted rather than tested | Equivalent mutants point at code that does nothing |
 | 35 | Survivors exposed a real bug: cookies with `Domain=librus.pl` (no leading dot) were dropped because the JDK matcher follows RFC 2965; now RFC 6265 domain matching | Fix the root cause found by the tool |
 | 36 | Third-party GitHub Actions pinned to commit SHAs; NVD key exposed only to the scan step | Security review: mutable tags in jobs with write permissions are a supply-chain risk |
+| 37 | Dependency submission and review gated by a probe of the repository Dependency graph setting: skipped with a warning while it is off, run automatically once enabled | CI failed on a repository setting, not code; changing repo settings is the owner's call |

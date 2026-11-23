@@ -179,10 +179,32 @@ jobs:
           APP_PASSWORD: ci-only
         run: docker compose -f docker-compose.yml config --quiet
 
+  # Submission and review need the repository's Dependency graph setting. While it is off, both are
+  # skipped with a warning instead of failing; they start running as soon as it is enabled.
+  dependency-graph-status:
+    name: Dependency graph availability
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      enabled: ${{ steps.probe.outputs.enabled }}
+    steps:
+      - id: probe
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh api "repos/${GITHUB_REPOSITORY}/dependency-graph/sbom" --silent 2>/dev/null; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "::warning title=Dependency graph disabled::Enable it in Settings > Advanced Security > Dependency graph to run dependency submission and review."
+          fi
+
   dependency-graph:
     name: Dependency graph submission
     runs-on: ubuntu-latest
-    needs: wrapper-validation
+    needs: [wrapper-validation, dependency-graph-status]
+    if: needs.dependency-graph-status.outputs.enabled == 'true'
     permissions:
       contents: write
     steps:
@@ -195,9 +217,9 @@ jobs:
 
   dependency-review:
     name: Dependency review (new vulnerable or copyleft dependencies)
-    if: github.event_name == 'pull_request'
+    if: github.event_name == 'pull_request' && needs.dependency-graph-status.outputs.enabled == 'true'
     runs-on: ubuntu-latest
-    needs: dependency-graph
+    needs: [dependency-graph-status, dependency-graph]
     permissions:
       contents: read
       pull-requests: write
