@@ -1,6 +1,6 @@
 buildscript {
     dependencies {
-        // OWASP Dependency-Check 13.0.0 and the Quarkus 3.40.1 Gradle plugin pull vulnerable versions onto the build
+        // OWASP Dependency-Check 13.0.0 and the Quarkus 4.0.0 Gradle plugin pull vulnerable versions onto the build
         // classpath: jackson 2.22.1/2.22.2 (GHSA-p6pp-m3f8-5c89, GHSA-7hhh-6rmp-j9qf), guava 33.6.0
         // (GHSA-xxph-c9ww-hj94), plexus-utils 4.0.2 (GHSA-6fmv-xxpf-w3cw) and org.json 20260522
         // (GHSA-ghc9-756g-vrcv). Versions live in the catalog; remove once both plugins ship patched versions.

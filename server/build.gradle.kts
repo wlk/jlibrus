@@ -7,7 +7,9 @@ plugins {
 description = "Quarkus backend + PWA for browsing Librus data, iCal feeds and e-mail summaries"
 
 dependencies {
-    implementation(enforcedPlatform("io.quarkus.platform:quarkus-bom:${libs.versions.quarkus.get()}"))
+    // Core BOM, not io.quarkus.platform:quarkus-bom: every extension used here is a core one, and the platform
+    // BOM is published days after each core release (4.0.0 core shipped while the platform was still at CR1).
+    implementation(enforcedPlatform("io.quarkus:quarkus-bom:${libs.versions.quarkus.get()}"))
     implementation(project(":librus-client"))
 
     implementation("io.quarkus:quarkus-arc")
