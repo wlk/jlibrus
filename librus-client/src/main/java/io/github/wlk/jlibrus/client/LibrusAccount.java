@@ -11,6 +11,9 @@ import io.github.wlk.jlibrus.client.model.Attendance;
 import io.github.wlk.jlibrus.client.model.AttendanceType;
 import io.github.wlk.jlibrus.client.model.BehaviourPoint;
 import io.github.wlk.jlibrus.client.model.CalendarEvent;
+import io.github.wlk.jlibrus.client.model.DescriptiveGrade;
+import io.github.wlk.jlibrus.client.model.Justification;
+import io.github.wlk.jlibrus.client.model.SchoolTrip;
 import io.github.wlk.jlibrus.client.model.Classroom;
 import io.github.wlk.jlibrus.client.model.EventCategory;
 import io.github.wlk.jlibrus.client.model.FreeDay;
@@ -31,6 +34,7 @@ import io.github.wlk.jlibrus.client.model.TeacherAbsence;
 import io.github.wlk.jlibrus.client.model.TimetableEntry;
 import io.github.wlk.jlibrus.client.parse.CalendarParser;
 import io.github.wlk.jlibrus.client.parse.DictionaryParser;
+import io.github.wlk.jlibrus.client.parse.ExtraParser;
 import io.github.wlk.jlibrus.client.parse.RecordParser;
 import io.github.wlk.jlibrus.client.parse.TimetableParser;
 import io.github.wlk.jlibrus.client.session.Gateway;
@@ -60,6 +64,7 @@ public final class LibrusAccount {
     private final SynergiaSession session;
     private final Gateway gateway;
     private final MessagesClient messages;
+    private final DescriptiveGradesReader descriptive;
 
     private LibrusAccount(Builder builder) {
         ObjectMapper json = new ObjectMapper();
@@ -67,6 +72,7 @@ public final class LibrusAccount {
         this.session = new SynergiaSession(builder.credentials, builder.endpoints, http, json, builder.clock);
         this.gateway = new Gateway(session, json);
         this.messages = new MessagesClient(session, json);
+        this.descriptive = new DescriptiveGradesReader(gateway);
     }
 
     public static Builder builder(Credentials credentials) {
@@ -183,6 +189,24 @@ public final class LibrusAccount {
 
     public List<TeacherAbsence> teacherAbsences() {
         return optional("TeacherFreeDays", CalendarParser::teacherAbsences);
+    }
+
+    /** Absence justifications the parent submitted, newest first, with the school's decision. */
+    public List<Justification> justifications() {
+        return optional("Justifications", ExtraParser::justifications);
+    }
+
+    /** School trips registered by the school, soonest first. */
+    public List<SchoolTrip> schoolTrips() {
+        return optional("SchoolTrips", ExtraParser::schoolTrips);
+    }
+
+    /**
+     * Descriptive grades of both Librus systems: the classic one (skills, values on the school scale, comments)
+     * and the newer partial grades (grade 1 from 2026). Empty when the school uses neither.
+     */
+    public List<DescriptiveGrade> descriptiveGrades() {
+        return descriptive.read();
     }
 
     /** Marks an announcement read; already-read announcements are not an error. */

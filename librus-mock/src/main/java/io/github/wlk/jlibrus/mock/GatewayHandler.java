@@ -3,6 +3,7 @@ package io.github.wlk.jlibrus.mock;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.github.wlk.jlibrus.mock.fixtures.SchoolFixtures;
 import io.github.wlk.jlibrus.mock.fixtures.StudentCalendar;
+import io.github.wlk.jlibrus.mock.fixtures.StudentExtras;
 import io.github.wlk.jlibrus.mock.fixtures.StudentRecords;
 import io.github.wlk.jlibrus.mock.http.MockExchange;
 
@@ -15,6 +16,7 @@ import java.util.function.Function;
 final class GatewayHandler {
 
     static final String PREFIX = "/gateway/api/2.0/";
+    static final String PARTIAL_GRADES = "Auth/DescriptiveGradingSystem/PartialGrades/Student/";
     private static final String EXPIRED =
             "{\"Status\":\"Error\",\"Code\":\"TokenIsExpired\",\"Message\":\"Access token is expired\"}";
 
@@ -25,6 +27,10 @@ final class GatewayHandler {
 
         StudentCalendar calendar() {
             return new StudentCalendar(account, today);
+        }
+
+        StudentExtras extras() {
+            return new StudentExtras(account, today);
         }
     }
 
@@ -52,6 +58,12 @@ final class GatewayHandler {
             Map.entry("ParentTeacherConferences", c -> c.calendar().parentMeetings()),
             Map.entry("SchoolFreeDays", c -> c.calendar().schoolFreeDays()),
             Map.entry("TeacherFreeDays", c -> c.calendar().teacherAbsences()),
+            Map.entry("Justifications", c -> c.extras().justifications()),
+            Map.entry("SchoolTrips", c -> c.extras().schoolTrips()),
+            Map.entry("DescriptiveGrades", c -> c.extras().descriptiveGrades()),
+            Map.entry("DescriptiveGrades/Skills", c -> StudentExtras.skills()),
+            Map.entry("DescriptiveGrades/Comments", c -> StudentExtras.comments()),
+            Map.entry("Auth/Subjects", c -> StudentExtras.authSubjects()),
             Map.entry("Timetables", c -> c.calendar().timetable(
                     LocalDate.parse(c.query().getOrDefault("weekStart", c.today().toString())))));
 
@@ -70,6 +82,11 @@ final class GatewayHandler {
         String resource = ex.path().substring(PREFIX.length());
         if ("POST".equals(ex.method()) && resource.startsWith("SchoolNotices/MarkAsRead/")) {
             ex.json(200, "{\"Status\":\"Ok\"}");
+            return;
+        }
+        if ("POST".equals(ex.method()) && resource.startsWith(PARTIAL_GRADES)) {
+            LocalDate today = LocalDate.now(state.clock().withZone(MockLibrus.ZONE));
+            ex.json(200, new StudentExtras(account.get(), today).partialGrades().toString());
             return;
         }
         if (resource.equals("Auth/TokenInfo")) {

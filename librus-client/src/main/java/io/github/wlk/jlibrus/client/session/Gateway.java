@@ -29,6 +29,12 @@ public final class Gateway {
         return session.exclusive(() -> call(resource, () -> fetch(resource)));
     }
 
+    /** POST with an empty JSON object to a read-only resource that requires POST, returning its JSON. */
+    public JsonNode postForJson(String resource) {
+        return session.exclusive(() -> call(resource, () ->
+                session.http().sendJson("POST", session.endpoints().gateway(resource), "{}")));
+    }
+
     /** POST without body to an idempotent action such as {@code SchoolNotices/MarkAsRead/{id}}. */
     public HttpResult post(String resource) {
         return session.exclusive(() -> postWithRenewal(resource));

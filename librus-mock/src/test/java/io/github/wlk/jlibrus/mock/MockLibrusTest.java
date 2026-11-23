@@ -75,7 +75,9 @@ class MockLibrusTest {
             "Notes/Categories, Categories", "SchoolNotices, SchoolNotices", "LuckyNumbers, LuckyNumber",
             "HomeWorks, HomeWorks", "HomeWorks/Categories, Categories", "HomeWorkAssignments, HomeWorkAssignments",
             "ParentTeacherConferences, ParentTeacherConferences", "SchoolFreeDays, SchoolFreeDays",
-            "TeacherFreeDays, TeacherFreeDays", "Timetables?weekStart=2026-11-23, Timetable", "Timetables, Timetable"})
+            "TeacherFreeDays, TeacherFreeDays", "Timetables?weekStart=2026-11-23, Timetable", "Timetables, Timetable",
+            "Justifications, data", "SchoolTrips, Data", "DescriptiveGrades, Grades", "DescriptiveGrades/Skills, Skills",
+            "DescriptiveGrades/Comments, Comments", "Auth/Subjects, data"})
     void gatewayServesEveryResource(String resource, String rootKey) throws Exception {
         browser.login("1234567u", "demo");
 
@@ -94,6 +96,8 @@ class MockLibrusTest {
         assertThat(browser.get("/gateway/api/2.0/Nope").statusCode()).isEqualTo(404);
         assertThat(browser.post("/gateway/api/2.0/SchoolNotices/MarkAsRead/x", "application/json", "").statusCode())
                 .isEqualTo(200);
+        assertThat(json(browser.post("/gateway/api/2.0/Auth/DescriptiveGradingSystem/PartialGrades/Student/LID-1",
+                "application/json", "{}")).path("data")).hasSize(1);
         mock.state().expireTokens();
         assertThat(browser.get("/gateway/api/2.0/Me").statusCode()).isEqualTo(401);
         assertThat(browser.get("/refreshToken").statusCode()).isEqualTo(200);

@@ -116,4 +116,28 @@ class ResourcesTest {
     void marksAnnouncementRead() {
         account.markAnnouncementRead("nb-open-day");
     }
+
+    @Test
+    void justificationsAndSchoolTrips() {
+        assertThat(account.justifications()).extracting(j -> j.status())
+                .containsExactly(io.github.wlk.jlibrus.client.model.JustificationStatus.PENDING,
+                        io.github.wlk.jlibrus.client.model.JustificationStatus.ACCEPTED);
+        assertThat(account.schoolTrips()).extracting(t -> t.destination()).containsExactly("Teatr Lalek", "Zielona szkoła");
+        assertThat(account.schoolTrips().get(1).coordinator()).isEqualTo("Ewa Lis");
+    }
+
+    @Test
+    void descriptiveGradesOfBothSystems() {
+        var grades = account.descriptiveGrades();
+
+        assertThat(grades).extracting(g -> g.system()).containsExactly(
+                io.github.wlk.jlibrus.client.model.DescriptiveGrade.DescriptiveSystem.CLASSIC,
+                io.github.wlk.jlibrus.client.model.DescriptiveGrade.DescriptiveSystem.CLASSIC,
+                io.github.wlk.jlibrus.client.model.DescriptiveGrade.DescriptiveSystem.PARTIAL);
+        assertThat(grades.getFirst().skill()).isEqualTo("Ekspresja muzyczna. Śpiew");
+        assertThat(grades.getFirst().comments()).containsExactly("Pięknie śpiewa i zna słowa piosenek.");
+        assertThat(grades.get(2).subjectId()).isEqualTo(2002L);
+        assertThat(grades.get(2).requirements()).containsExactly("Czyta teksty dla dzieci");
+        assertThat(MockedLibrus.account(mock, io.github.wlk.jlibrus.mock.MockAccount.jan()).descriptiveGrades()).isEmpty();
+    }
 }
