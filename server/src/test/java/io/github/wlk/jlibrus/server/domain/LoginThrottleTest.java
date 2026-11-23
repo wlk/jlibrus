@@ -1,0 +1,51 @@
+package io.github.wlk.jlibrus.server.domain;
+
+import org.junit.jupiter.api.Test;
+
+import java.time.Duration;
+import java.time.Instant;
+import java.util.concurrent.atomic.AtomicReference;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+class LoginThrottleTest {
+
+    private final AtomicReference<Instant> now = new AtomicReference<>(Instant.parse("2026-11-23T10:00:00Z"));
+    private final LoginThrottle throttle = new LoginThrottle(3, Duration.ofMinutes(15), now::get);
+
+    @Test
+    void allowsUntilMaxFailuresReached() {
+        throttle.recordFailure("1.2.3.4");
+        throttle.recordFailure("1.2.3.4");
+        assertThat(throttle.isBlocked("1.2.3.4")).isFalse();
+
+        throttle.recordFailure("1.2.3.4");
+        assertThat(throttle.isBlocked("1.2.3.4")).isTrue();
+    }
+
+    @Test
+    void blockIsPerKey() {
+        for (int i = 0; i < 3; i++) {
+            throttle.recordFailure("1.2.3.4");
+        }
+        assertThat(throttle.isBlocked("5.6.7.8")).isFalse();
+    }
+
+    @Test
+    void failuresExpireAfterWindow() {
+        for (int i = 0; i < 3; i++) {
+            throttle.recordFailure("1.2.3.4");
+        }
+        now.set(now.get().plus(Duration.ofMinutes(15)));
+        assertThat(throttle.isBlocked("1.2.3.4")).isFalse();
+    }
+
+    @Test
+    void successClearsFailures() {
+        throttle.recordFailure("1.2.3.4");
+        throttle.recordFailure("1.2.3.4");
+        throttle.recordSuccess("1.2.3.4");
+        throttle.recordFailure("1.2.3.4");
+        assertThat(throttle.isBlocked("1.2.3.4")).isFalse();
+    }
+}
