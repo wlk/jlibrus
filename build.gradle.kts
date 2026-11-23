@@ -1,9 +1,12 @@
 buildscript {
     dependencies {
-        // OWASP Dependency-Check 13.0.0 pulls jackson 2.22.1 and the Quarkus 3.40.1 Gradle plugin 2.22.2 onto
-        // the build classpath; both have high-severity advisories GHSA-p6pp-m3f8-5c89 and GHSA-7hhh-6rmp-j9qf
-        // (fixed in 2.22.3). Remove once both plugins ship a patched jackson.
-        classpath(platform("com.fasterxml.jackson:jackson-bom:2.22.4"))
+        // OWASP Dependency-Check 13.0.0 and the Quarkus 3.40.1 Gradle plugin pull vulnerable jackson 2.22.1/2.22.2
+        // (GHSA-p6pp-m3f8-5c89, GHSA-7hhh-6rmp-j9qf) and guava 33.6.0 (GHSA-xxph-c9ww-hj94) onto the build
+        // classpath. Versions live in the catalog; remove once both plugins ship patched versions.
+        classpath(platform(libs.jackson.bom.patched))
+        constraints {
+            classpath(libs.guava.patched)
+        }
     }
 }
 
