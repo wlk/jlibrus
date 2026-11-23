@@ -93,10 +93,15 @@ class SummaryBuilderTest {
     void multiDayItemsOverlappingTheWindowAreUpcoming() {
         When christmas = new When.AllDay(LocalDate.of(2026, 12, 20), LocalDate.of(2026, 12, 31));
 
-        assertThat(SummaryBuilder.overlaps(christmas, LocalDate.of(2026, 12, 24), LocalDate.of(2026, 12, 25))).isTrue();
-        assertThat(SummaryBuilder.overlaps(christmas, LocalDate.of(2027, 1, 1), LocalDate.of(2027, 1, 2))).isFalse();
-        assertThat(SummaryBuilder.overlaps(christmas, LocalDate.of(2026, 12, 1), LocalDate.of(2026, 12, 19))).isFalse();
-        assertThat(SummaryBuilder.overlaps(christmas, LocalDate.of(2026, 12, 31), LocalDate.of(2026, 12, 31))).isTrue();
+        assertThat(christmas.overlaps(LocalDate.of(2026, 12, 24), LocalDate.of(2026, 12, 25))).isTrue();
+        assertThat(christmas.overlaps(LocalDate.of(2027, 1, 1), LocalDate.of(2027, 1, 2))).isFalse();
+        assertThat(christmas.overlaps(LocalDate.of(2026, 12, 1), LocalDate.of(2026, 12, 19))).isFalse();
+        assertThat(christmas.overlaps(LocalDate.of(2026, 12, 31), LocalDate.of(2026, 12, 31))).isTrue();
+        assertThat(christmas.overlaps(LocalDate.of(2026, 12, 1), LocalDate.of(2026, 12, 20))).isTrue();
+        When lesson = new When.Timed(TODAY.atTime(8, 0), TODAY.atTime(9, 0));
+        assertThat(lesson.overlaps(TODAY, TODAY)).isTrue();
+        assertThat(lesson.overlaps(TODAY.plusDays(1), TODAY.plusDays(2))).isFalse();
+        assertThat(lesson.lastDay()).isEqualTo(TODAY);
     }
 
     @Test

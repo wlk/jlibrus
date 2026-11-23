@@ -9,6 +9,13 @@ public sealed interface When {
 
     LocalDate firstDay();
 
+    LocalDate lastDay();
+
+    /** Whether any day of this item falls within {@code [from, to]} (inclusive). */
+    default boolean overlaps(LocalDate from, LocalDate to) {
+        return !lastDay().isBefore(from) && !firstDay().isAfter(to);
+    }
+
     /** Whole-day item covering {@code from}..{@code toInclusive}. */
     record AllDay(LocalDate from, LocalDate toInclusive) implements When {
         public AllDay {
@@ -27,6 +34,11 @@ public sealed interface When {
         public LocalDate firstDay() {
             return from;
         }
+
+        @Override
+        public LocalDate lastDay() {
+            return toInclusive;
+        }
     }
 
     /** Item with a start and end time in the school's local time zone. */
@@ -42,6 +54,11 @@ public sealed interface When {
         @Override
         public LocalDate firstDay() {
             return start.toLocalDate();
+        }
+
+        @Override
+        public LocalDate lastDay() {
+            return end.toLocalDate();
         }
     }
 }

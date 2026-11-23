@@ -40,6 +40,8 @@ public class DatabaseProducer {
         }
         HikariConfig hikari = new HikariConfig();
         hikari.setJdbcUrl(url);
+        // Explicit driver: DriverManager caches drivers per class loader, which breaks across Quarkus restarts.
+        hikari.setDriverClassName(sqlite ? "org.sqlite.JDBC" : driverFor(url));
         config.username().ifPresent(hikari::setUsername);
         config.password().ifPresent(hikari::setPassword);
         hikari.setMaximumPoolSize(config.poolSize());
@@ -51,6 +53,13 @@ public class DatabaseProducer {
         }
         LOG.infof("Using %s database", sqlite ? "SQLite" : "JDBC " + url.split(":")[1]);
         return new HikariDataSource(hikari);
+    }
+
+    static String driverFor(String url) {
+        if (url.startsWith("jdbc:postgresql:")) {
+            return "org.postgresql.Driver";
+        }
+        throw new IllegalArgumentException("Unsupported DB_URL (use jdbc:sqlite:... or jdbc:postgresql://...)");
     }
 
     static void migrate(HikariDataSource dataSource) {

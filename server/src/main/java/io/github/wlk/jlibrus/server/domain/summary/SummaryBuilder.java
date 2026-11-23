@@ -4,9 +4,7 @@ import io.github.wlk.jlibrus.server.domain.EntryType;
 import io.github.wlk.jlibrus.server.domain.Subscription;
 import io.github.wlk.jlibrus.server.domain.TimelineEntry;
 import io.github.wlk.jlibrus.server.domain.agenda.AgendaItem;
-import io.github.wlk.jlibrus.server.domain.ical.When;
 
-import java.time.LocalDate;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
@@ -51,13 +49,7 @@ public final class SummaryBuilder {
         return agenda.stream()
                 .filter(i -> subscription.types().contains(i.type()))
                 .filter(i -> i.type() != EntryType.LESSON || frequency == Frequency.DAILY)
-                .filter(i -> overlaps(i.when(), window.upcomingFrom(), window.upcomingTo()))
+                .filter(i -> i.when().overlaps(window.upcomingFrom(), window.upcomingTo()))
                 .toList();
-    }
-
-    static boolean overlaps(When when, LocalDate from, LocalDate to) {
-        LocalDate first = when.firstDay();
-        LocalDate last = when instanceof When.AllDay allDay ? allDay.toInclusive() : first;
-        return !last.isBefore(from) && !first.isAfter(to);
     }
 }

@@ -27,13 +27,19 @@ public class EnvIdentityProvider implements IdentityProvider<UsernamePasswordAut
     private static final Logger LOG = Logger.getLogger(EnvIdentityProvider.class);
     static final String ROLE = "parent";
 
+    /** Key of the global counter: caps guessing even when client addresses are spoofed or rotated. */
+    static final String EVERYONE = "*";
+    static final int GLOBAL_FACTOR = 4;
+
     private final AuthConfig config;
-    private final LoginThrottle throttle;
+    private final LoginThrottle perClient;
+    private final LoginThrottle global;
 
     @Inject
     public EnvIdentityProvider(AuthConfig config) {
         this.config = config;
-        this.throttle = new LoginThrottle(config.maxFailures(), config.blockWindow(), Instant::now);
+        this.perClient = new LoginThrottle(config.maxFailures(), config.blockWindow(), Instant::now);
+        this.global = new LoginThrottle(config.maxFailures() * GLOBAL_FACTOR, config.blockWindow(), Instant::now);
     }
 
     @Override
@@ -45,7 +51,7 @@ public class EnvIdentityProvider implements IdentityProvider<UsernamePasswordAut
     public Uni<SecurityIdentity> authenticate(UsernamePasswordAuthenticationRequest request,
                                               AuthenticationRequestContext context) {
         String client = clientAddress(request);
-        if (throttle.isBlocked(client)) {
+        if (perClient.isBlocked(client) || global.isBlocked(EVERYONE)) {
             LOG.warnf("Login blocked for %s after repeated failures", client);
             return Uni.createFrom().failure(new AuthenticationFailedException("Too many failed attempts"));
         }
@@ -53,11 +59,12 @@ public class EnvIdentityProvider implements IdentityProvider<UsernamePasswordAut
         boolean userOk = SecretTokens.matches(config.username(), request.getUsername());
         boolean passOk = SecretTokens.matches(config.password(), password);
         if (!(userOk && passOk)) {
-            throttle.recordFailure(client);
+            perClient.recordFailure(client);
+            global.recordFailure(EVERYONE);
             LOG.infof("Failed login from %s", client);
             return Uni.createFrom().failure(new AuthenticationFailedException("Invalid credentials"));
         }
-        throttle.recordSuccess(client);
+        perClient.recordSuccess(client);
         return Uni.createFrom().item(QuarkusSecurityIdentity.builder()
                 .setPrincipal(new QuarkusPrincipal(config.username()))
                 .addRole(ROLE)

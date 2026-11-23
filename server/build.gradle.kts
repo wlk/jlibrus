@@ -26,6 +26,7 @@ dependencies {
     runtimeOnly("org.postgresql:postgresql")
 
     testImplementation("io.quarkus:quarkus-junit")
+    testImplementation("io.quarkus:quarkus-jacoco")
     testImplementation("io.rest-assured:rest-assured")
     testImplementation(project(":librus-mock"))
     testImplementation(libs.sqlite.jdbc)
@@ -35,6 +36,11 @@ dependencies {
 
 tasks.withType<Test>().configureEach {
     systemProperty("java.util.logging.manager", "org.jboss.logmanager.LogManager")
+}
+
+// @QuarkusTest classes are loaded by Quarkus; quarkus-jacoco records them in its own file, merged here.
+tasks.named<JacocoReport>("jacocoTestReport") {
+    executionData.setFrom(fileTree(layout.buildDirectory) { include("jacoco/test.exec", "jacoco-quarkus.exec") })
 }
 
 // Pure domain logic is mutation-tested; Quarkus wiring (resources, producers) is covered by @QuarkusTest suites.

@@ -48,4 +48,16 @@ class LoginThrottleTest {
         throttle.recordFailure("1.2.3.4");
         assertThat(throttle.isBlocked("1.2.3.4")).isFalse();
     }
+
+    @Test
+    void staleClientsArePrunedWhenTooManyAreTracked() {
+        for (int i = 0; i < LoginThrottle.MAX_TRACKED; i++) {
+            throttle.recordFailure("10.0." + i);
+        }
+        now.set(now.get().plus(Duration.ofMinutes(16)));
+
+        throttle.recordFailure("1.2.3.4");
+
+        assertThat(throttle.trackedClients()).isEqualTo(1);
+    }
 }
