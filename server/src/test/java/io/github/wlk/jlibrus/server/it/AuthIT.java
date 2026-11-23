@@ -31,8 +31,14 @@ class AuthIT {
         String cookie = Session.login();
 
         Session.as(cookie).get("/api/auth/me").then().statusCode(200).body("username", equalTo("parent"));
+        String otherDevice = Session.login();
         Session.as(cookie).post("/api/auth/logout").then().statusCode(204)
                 .header("Set-Cookie", containsString(Session.COOKIE + "=;"));
+
+        Session.as(cookie).get("/api/auth/me").then().statusCode(401);
+        Session.as(otherDevice).get("/api/auth/me").then().statusCode(401);
+        String fresh = Session.login();
+        Session.as(fresh).get("/api/auth/me").then().statusCode(200).body("username", equalTo("parent"));
     }
 
     @Test

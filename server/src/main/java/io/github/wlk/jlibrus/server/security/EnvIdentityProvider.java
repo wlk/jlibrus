@@ -2,6 +2,7 @@ package io.github.wlk.jlibrus.server.security;
 
 import io.github.wlk.jlibrus.server.domain.LoginThrottle;
 import io.github.wlk.jlibrus.server.domain.SecretTokens;
+import io.github.wlk.jlibrus.server.domain.SessionPrincipal;
 import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.identity.AuthenticationRequestContext;
 import io.quarkus.security.identity.IdentityProvider;
@@ -32,12 +33,14 @@ public class EnvIdentityProvider implements IdentityProvider<UsernamePasswordAut
     static final int GLOBAL_FACTOR = 4;
 
     private final AuthConfig config;
+    private final SessionEpoch epoch;
     private final LoginThrottle perClient;
     private final LoginThrottle global;
 
     @Inject
-    public EnvIdentityProvider(AuthConfig config) {
+    public EnvIdentityProvider(AuthConfig config, SessionEpoch epoch) {
         this.config = config;
+        this.epoch = epoch;
         this.perClient = new LoginThrottle(config.maxFailures(), config.blockWindow(), Instant::now);
         this.global = new LoginThrottle(config.maxFailures() * GLOBAL_FACTOR, config.blockWindow(), Instant::now);
     }
@@ -66,7 +69,7 @@ public class EnvIdentityProvider implements IdentityProvider<UsernamePasswordAut
         }
         perClient.recordSuccess(client);
         return Uni.createFrom().item(QuarkusSecurityIdentity.builder()
-                .setPrincipal(new QuarkusPrincipal(config.username()))
+                .setPrincipal(new QuarkusPrincipal(new SessionPrincipal(config.username(), epoch.current()).format()))
                 .addRole(ROLE)
                 .build());
     }

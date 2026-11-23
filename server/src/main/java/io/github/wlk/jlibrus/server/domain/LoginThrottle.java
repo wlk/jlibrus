@@ -14,7 +14,10 @@ public final class LoginThrottle {
     private final int maxFailures;
     private final Duration window;
     private final Supplier<Instant> clock;
-    /** Above this many tracked clients, stale ones are dropped so spoofed addresses cannot exhaust memory. */
+    /**
+     * Hard cap on tracked clients: stale ones are dropped first; when every slot is still active new clients are
+     * not tracked (the caller's global throttle still counts them), so spoofed addresses cannot exhaust memory.
+     */
     static final int MAX_TRACKED = 10_000;
 
     private final ConcurrentMap<String, List<Instant>> failures = new ConcurrentHashMap<>();
@@ -33,6 +36,9 @@ public final class LoginThrottle {
         Instant now = clock.get();
         if (failures.size() >= MAX_TRACKED) {
             failures.entrySet().removeIf(e -> e.getValue().stream().noneMatch(t -> isRecent(t, now)));
+            if (failures.size() >= MAX_TRACKED && !failures.containsKey(key)) {
+                return;
+            }
         }
         failures.compute(key, (k, old) -> Stream.concat(
                 old == null ? Stream.empty() : old.stream().filter(t -> isRecent(t, now)),

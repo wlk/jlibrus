@@ -33,7 +33,7 @@ abstract class RepositoryContract {
     @BeforeEach
     void setUpRepositories() {
         Jdbc jdbc = jdbc();
-        for (String table : List.of("summary_dispatch", "email_subscription", "calendar_feed", "timeline_entry")) {
+        for (String table : List.of("summary_dispatch", "email_subscription", "calendar_feed", "timeline_entry", "app_setting")) {
             jdbc.update("DELETE FROM " + table, s -> { });
         }
         feeds = new CalendarFeedRepository(jdbc);
@@ -125,6 +125,16 @@ abstract class RepositoryContract {
         timeline.insertNew(List.of(full, sparse));
 
         assertThat(timeline.findRecent("kid", 10)).containsExactlyInAnyOrder(full, sparse);
+    }
+
+    @Test
+    void settingsUpsert() {
+        SettingRepository settings = new SettingRepository(jdbc());
+
+        assertThat(settings.get("k")).isEmpty();
+        settings.put("k", "1");
+        settings.put("k", "2");
+        assertThat(settings.get("k")).contains("2");
     }
 
     private static Subscription subscription(String email, Set<Frequency> frequencies, boolean enabled) {

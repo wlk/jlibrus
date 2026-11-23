@@ -60,4 +60,15 @@ class LoginThrottleTest {
 
         assertThat(throttle.trackedClients()).isEqualTo(1);
     }
+
+    @Test
+    void neverTracksMoreThanTheCapWhenAllClientsAreActive() {
+        for (int i = 0; i < LoginThrottle.MAX_TRACKED + 50; i++) {
+            throttle.recordFailure("10.1." + i);
+        }
+
+        assertThat(throttle.trackedClients()).isEqualTo(LoginThrottle.MAX_TRACKED);
+        throttle.recordFailure("10.1.0");
+        assertThat(throttle.trackedClients()).isEqualTo(LoginThrottle.MAX_TRACKED);
+    }
 }

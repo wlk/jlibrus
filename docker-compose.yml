@@ -1,0 +1,78 @@
+# jlibrus - all pieces in one compose file.
+#
+#   cp .env.example .env            # set APP_USERNAME/APP_PASSWORD and your Librus accounts
+#   docker compose up -d --build    # app + PostgreSQL + Mailpit (test SMTP inbox)
+#
+# Demo without a real Librus account (offline mock with two fake children):
+#   LIBRUS_ENDPOINT_OVERRIDE=http://librus-mock:8090 docker compose --profile demo up -d --build
+#   (log in to Librus accounts 1234567u / demo and 7654321u / demo)
+
+name: jlibrus
+
+services:
+  jlibrus:
+    build:
+      context: .
+      target: server
+    image: jlibrus/server:local
+    restart: unless-stopped
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      APP_USERNAME: ${APP_USERNAME:-parent}
+      APP_PASSWORD: ${APP_PASSWORD:?Set APP_PASSWORD in .env}
+      APP_SESSION_KEY: ${APP_SESSION_KEY:-}
+      APP_LANGUAGE: ${APP_LANGUAGE:-pl}
+      DB_URL: ${DB_URL:-jdbc:postgresql://postgres:5432/jlibrus}
+      DB_USERNAME: ${DB_USERNAME:-jlibrus}
+      DB_PASSWORD: ${DB_PASSWORD:-jlibrus}
+      SMTP_HOST: ${SMTP_HOST:-mailpit}
+      SMTP_PORT: ${SMTP_PORT:-1025}
+      SMTP_FROM: ${SMTP_FROM:-jlibrus@localhost}
+      SMTP_STARTTLS: ${SMTP_STARTTLS:-DISABLED}
+      LIBRUS_ENDPOINT_OVERRIDE: ${LIBRUS_ENDPOINT_OVERRIDE:-}
+    ports:
+      - "${HTTP_PORT:-8080}:8080"
+    volumes:
+      - jlibrus-data:/data
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: jlibrus
+      POSTGRES_USER: ${DB_USERNAME:-jlibrus}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-jlibrus}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d jlibrus"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  # Catches outgoing e-mail locally: web UI on http://localhost:8025. Point SMTP_* at a real server in production.
+  mailpit:
+    image: axllent/mailpit:v1.34
+    restart: unless-stopped
+    ports:
+      - "${MAILPIT_PORT:-8025}:8025"
+
+  # Offline Librus imitation for demos and manual testing (profile "demo").
+  librus-mock:
+    profiles: ["demo"]
+    build:
+      context: .
+      target: librus-mock
+    image: jlibrus/librus-mock:local
+    environment:
+      MOCK_PORT: 8090
+      MOCK_PUBLIC_URL: http://librus-mock:8090
+
+volumes:
+  jlibrus-data:
+  postgres-data:
