@@ -12,6 +12,14 @@ sqlite = "3.54.1.0"
 postgres = "42.7.13"
 testcontainers = "2.0.5"
 jacoco = "0.8.14"
+checkstyle = "14.4.0"
+pmd = "7.29.0"
+spotbugs = "4.10.5"
+spotbugsPlugin = "6.5.13"
+findsecbugs = "1.14.0"
+errorprone = "2.53.0"
+errorpronePlugin = "5.2.0"
+dependencyCheck = "13.0.0"
 
 [libraries]
 jackson-databind = { module = "com.fasterxml.jackson.core:jackson-databind", version.ref = "jackson" }
@@ -27,5 +35,11 @@ postgres-jdbc = { module = "org.postgresql:postgresql", version.ref = "postgres"
 testcontainers-postgres = { module = "org.testcontainers:testcontainers-postgresql", version.ref = "testcontainers" }
 testcontainers-junit = { module = "org.testcontainers:testcontainers-junit-jupiter", version.ref = "testcontainers" }
 
+pmd-cli = { module = "net.sourceforge.pmd:pmd-cli", version.ref = "pmd" }
+pmd-java = { module = "net.sourceforge.pmd:pmd-java", version.ref = "pmd" }
+findsecbugs = { module = "com.h3xstream.findsecbugs:findsecbugs-plugin", version.ref = "findsecbugs" }
+errorprone-core = { module = "com.google.errorprone:error_prone_core", version.ref = "errorprone" }
+
 [plugins]
 quarkus = { id = "io.quarkus", version.ref = "quarkus" }
+dependency-check = { id = "org.owasp.dependencycheck", version.ref = "dependencyCheck" }

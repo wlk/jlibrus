@@ -60,9 +60,12 @@ public record LibrusEndpoints(URI synergia, URI oauth, URI messages) {
     }
 
     private static boolean sameOrigin(URI a, URI b) {
-        return a.getScheme() != null && a.getScheme().equalsIgnoreCase(b.getScheme())
-                && a.getHost() != null && a.getHost().equalsIgnoreCase(b.getHost())
+        return sameIgnoringCase(a.getScheme(), b.getScheme()) && sameIgnoringCase(a.getHost(), b.getHost())
                 && a.getPort() == b.getPort();
+    }
+
+    private static boolean sameIgnoringCase(String a, String b) {
+        return a != null && a.equalsIgnoreCase(b);
     }
 
     private static URI stripTrailingSlash(URI uri) {

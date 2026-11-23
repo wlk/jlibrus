@@ -15,6 +15,8 @@ public final class MockLibrusMain {
     private MockLibrusMain() {
     }
 
+    // binds to all interfaces inside its container; closed by the shutdown hook
+    @SuppressWarnings({"PMD.AvoidUsingHardCodedIP", "PMD.CloseResource"})
     public static void main(String[] args) throws InterruptedException {
         int port = Integer.parseInt(env("MOCK_PORT", "8090"));
         String host = env("MOCK_HOST", "0.0.0.0");

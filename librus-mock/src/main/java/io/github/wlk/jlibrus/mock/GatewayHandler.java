@@ -89,7 +89,7 @@ final class GatewayHandler {
             ex.json(200, new StudentExtras(account.get(), today).partialGrades().toString());
             return;
         }
-        if (resource.equals("Auth/TokenInfo")) {
+        if ("Auth/TokenInfo".equals(resource)) {
             ex.json(200, "{\"UserIdentifier\":\"LID-" + account.get().seed() + "\",\"UserType\":5}");
             return;
         }

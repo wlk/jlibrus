@@ -17,6 +17,8 @@ public final class SummaryBuilder {
     }
 
     /**
+     * Builds the summary one subscription receives.
+     *
      * @param children   child id to display name, in display order
      * @param news       timeline entries noticed inside the window (any child, any type)
      * @param agendas    each child's agenda

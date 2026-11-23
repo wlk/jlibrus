@@ -1,0 +1,64 @@
+<?xml version="1.0"?>
+<ruleset name="jlibrus"
+         xmlns="http://pmd.sourceforge.net/ruleset/2.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://pmd.sourceforge.net/ruleset/2.0.0 https://pmd.sourceforge.io/ruleset_2_0_0.xsd">
+    <description>Bug-finding PMD rules. Pure style and taste rules are left to Checkstyle or excluded below with a reason.</description>
+
+    <rule ref="category/java/bestpractices.xml">
+        <!-- JBoss logging uses lazy formatting (debugf/infof); guards add noise -->
+        <exclude name="GuardLogStatement"/>
+        <!-- immutable List/Map/Set interfaces in records are intended -->
+        <exclude name="LooseCoupling"/>
+        <!-- small value types legitimately take varargs-free arrays -->
+        <exclude name="UseVarargs"/>
+        <!-- JUnit 5 tests are outside the analysed source set -->
+        <exclude name="UnitTestShouldIncludeAssert"/>
+    </rule>
+
+    <rule ref="category/java/errorprone.xml">
+        <!-- domain constants such as status codes are clearer inline -->
+        <exclude name="AvoidLiteralsInIfCondition"/>
+        <!-- JSON field names repeat by nature of the Librus API -->
+        <exclude name="AvoidDuplicateLiterals"/>
+        <!-- null is a meaningful "absent" value in records mirroring the API -->
+        <exclude name="NullAssignment"/>
+        <!-- per-child sync isolates any failure on purpose (see SyncService) -->
+        <exclude name="AvoidCatchingGenericException"/>
+        <!-- records expose components as accessors with the same name -->
+        <exclude name="AvoidFieldNameMatchingMethodName"/>
+        <!-- exceptions are never serialised -->
+        <exclude name="MissingSerialVersionUID"/>
+        <exclude name="EmptyCatchBlock"/>
+    </rule>
+
+    <rule ref="category/java/errorprone.xml/EmptyCatchBlock">
+        <properties>
+            <!-- an intentionally ignored exception must say why in a comment -->
+            <property name="allowCommentedBlocks" value="true"/>
+        </properties>
+    </rule>
+
+    <rule ref="category/java/multithreading.xml">
+        <!-- the mock and the library use virtual threads and locks explicitly -->
+        <exclude name="DoNotUseThreads"/>
+        <!-- single-writer services synchronise whole methods deliberately -->
+        <exclude name="AvoidSynchronizedAtMethodLevel"/>
+        <exclude name="AvoidSynchronizedStatement"/>
+        <!-- locally confined maps never escape their method -->
+        <exclude name="UseConcurrentHashMap"/>
+        <!-- volatile is used for single-writer published state (lazy caches, flags) -->
+        <exclude name="AvoidUsingVolatile"/>
+    </rule>
+
+    <rule ref="category/java/security.xml"/>
+
+    <rule ref="category/java/performance.xml">
+        <!-- records and views are built per item by design -->
+        <exclude name="AvoidInstantiatingObjectsInLoops"/>
+        <!-- readability over micro-optimisation for short strings -->
+        <exclude name="ConsecutiveAppendsShouldReuse"/>
+        <exclude name="ConsecutiveLiteralAppends"/>
+        <exclude name="InsufficientStringBufferDeclaration"/>
+    </rule>
+</ruleset>

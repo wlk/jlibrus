@@ -75,8 +75,8 @@ public final class MockExchange {
 
     public void send(int status, String contentType, String text) {
         byte[] bytes = text.getBytes(StandardCharsets.UTF_8);
-        try {
-            exchange.getResponseHeaders().set("Content-Type", contentType);
+        try (HttpExchange closing = exchange) {
+            closing.getResponseHeaders().set("Content-Type", contentType);
             exchange.sendResponseHeaders(status, bytes.length == 0 ? -1 : bytes.length);
             if (bytes.length > 0) {
                 try (OutputStream out = exchange.getResponseBody()) {
@@ -85,8 +85,6 @@ public final class MockExchange {
             }
         } catch (IOException e) {
             throw new UncheckedIOException(e);
-        } finally {
-            exchange.close();
         }
     }
 
@@ -103,7 +101,7 @@ public final class MockExchange {
         if (raw == null || raw.isBlank()) {
             return result;
         }
-        for (String pair : raw.split(separator)) {
+        for (String pair : raw.split(separator, -1)) {
             int eq = pair.indexOf('=');
             String key = eq < 0 ? pair : pair.substring(0, eq);
             String value = eq < 0 ? "" : pair.substring(eq + 1);

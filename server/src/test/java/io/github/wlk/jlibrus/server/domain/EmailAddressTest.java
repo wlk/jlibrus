@@ -16,7 +16,8 @@ class EmailAddressTest {
 
     @ParameterizedTest
     @ValueSource(strings = {"", "plain", "a@b", "@example.com", "a@@example.com", "a b@example.com",
-            "a@example.com\r\nBcc: x@y.z", "a@.com"})
+            "a@example.com\r\nBcc: x@y.z", "a@.com", "a@-x.pl", "a@x-.pl", "a@b..pl", "a@", "a@b.pl@c.pl",
+            "a@b.pl.", "a@xn_.pl"})
     void rejectsInvalidAddresses(String raw) {
         assertThatThrownBy(() -> EmailAddress.parse(raw))
                 .isInstanceOf(IllegalArgumentException.class)
@@ -32,5 +33,13 @@ class EmailAddressTest {
     @Test
     void rejectsNull() {
         assertThatThrownBy(() -> EmailAddress.parse(null)).isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void acceptsRealisticAddresses() {
+        assertThat(EmailAddress.parse("jan.kowalski+librus@szkola-7.edu.pl").value()).isEqualTo("jan.kowalski+librus@szkola-7.edu.pl");
+        assertThat(EmailAddress.parse("x".repeat(64) + "@a.pl").value()).startsWith("xxx");
+        assertThatThrownBy(() -> EmailAddress.parse("x".repeat(65) + "@a.pl")).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> EmailAddress.parse("a@" + "b".repeat(64) + ".pl")).isInstanceOf(IllegalArgumentException.class);
     }
 }

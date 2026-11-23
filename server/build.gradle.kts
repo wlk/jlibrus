@@ -39,7 +39,7 @@ tasks.withType<Test>().configureEach {
 }
 
 // @QuarkusTest classes are loaded by Quarkus; quarkus-jacoco records them in its own file, merged here.
-tasks.named<JacocoReport>("jacocoTestReport") {
+tasks.withType<JacocoReportBase>().configureEach {
     executionData.setFrom(fileTree(layout.buildDirectory) { include("jacoco/test.exec", "jacoco-quarkus.exec") })
 }
 

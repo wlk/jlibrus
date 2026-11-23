@@ -6,7 +6,7 @@ import java.util.Map;
 /** Server-generated wording (calendar titles, e-mails) in Polish (default) or English. */
 public final class Texts {
 
-    private static final Map<String, String[]> TEXTS = Map.ofEntries(
+    private static final Map<String, String[]> DICTIONARY = Map.ofEntries(
             entry("homework", "Zadanie domowe", "Homework due"),
             entry("cancelled", "Odwołana lekcja", "Cancelled lesson"),
             entry("substitution", "Zastępstwo", "Substitution"),
@@ -47,7 +47,7 @@ public final class Texts {
     }
 
     public static String get(String key, Locale locale) {
-        String[] values = TEXTS.get(key);
+        String[] values = DICTIONARY.get(key);
         if (values == null) {
             return key;
         }

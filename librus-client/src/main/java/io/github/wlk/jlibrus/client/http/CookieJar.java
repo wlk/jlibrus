@@ -40,7 +40,7 @@ final class CookieJar extends CookieHandler {
     @Override
     public void put(URI uri, Map<String, List<String>> responseHeaders) {
         responseHeaders.forEach((name, values) -> {
-            if (name != null && name.equalsIgnoreCase("Set-Cookie")) {
+            if (name != null && "Set-Cookie".equalsIgnoreCase(name)) {
                 values.forEach(value -> store(uri, value));
             }
         });
@@ -84,7 +84,7 @@ final class CookieJar extends CookieHandler {
     }
 
     static boolean pathMatches(String requestPath, String cookiePath) {
-        if (cookiePath == null || cookiePath.isEmpty() || cookiePath.equals("/")) {
+        if (cookiePath == null || cookiePath.isEmpty() || "/".equals(cookiePath)) {
             return true;
         }
         return requestPath.equals(cookiePath)

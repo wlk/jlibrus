@@ -3,6 +3,7 @@ import io.github.wlk.jlibrus.gradle.CrapCheckTask
 plugins {
     java
     jacoco
+    id("jlibrus.quality-conventions")
 }
 
 val catalog = extensions.getByType<VersionCatalogsExtension>().named("libs")
@@ -19,6 +20,15 @@ dependencies {
     "testImplementation"(catalog.findLibrary("junit-jupiter").get())
     "testImplementation"(catalog.findLibrary("assertj").get())
     "testRuntimeOnly"(catalog.findLibrary("junit-launcher").get())
+}
+
+// Javadoc must be well-formed (broken tags or HTML fail the build); missing comments are not an error.
+tasks.withType<Javadoc>().configureEach {
+    (options as StandardJavadocDocletOptions).apply {
+        addStringOption("Xdoclint:all,-missing", "-quiet")
+        addBooleanOption("Werror", true)
+        encoding = "UTF-8"
+    }
 }
 
 jacoco {

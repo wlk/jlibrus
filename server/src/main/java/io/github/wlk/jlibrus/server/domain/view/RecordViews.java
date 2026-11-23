@@ -89,7 +89,7 @@ public final class RecordViews {
         List<AttendanceView> absences = records.stream()
                 .filter(a -> kind(directory, a) != AttendanceKind.PRESENT)
                 .sorted(Comparator.comparing(Attendance::date, Comparator.nullsLast(Comparator.reverseOrder()))
-                        .thenComparing(a -> a.lessonNo() == null ? 0 : a.lessonNo()))
+                        .thenComparingInt(a -> a.lessonNo() == null ? 0 : a.lessonNo()))
                 .map(a -> attendanceView(directory, a))
                 .toList();
         return new AttendanceReport(new AttendanceStats(total, Map.copyOf(counts), percent), absences,

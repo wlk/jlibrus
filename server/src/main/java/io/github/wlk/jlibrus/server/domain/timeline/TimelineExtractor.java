@@ -114,7 +114,8 @@ public final class TimelineExtractor {
             return Optional.empty();
         }
         String subject = directory.lesson(attendance.lessonId()).map(l -> directory.subjectName(l.subjectId())).orElse("");
-        String lesson = attendance.lessonNo() == null ? "" : " (" + Texts.get("lesson", locale) + " " + attendance.lessonNo() + ")";
+        String lesson = attendance.lessonNo() == null ? ""
+                : " (" + Texts.get("lesson", locale) + " " + attendance.lessonNo() + ")";
         String title = Texts.get("attendance." + kind.name(), locale) + (subject.isEmpty() ? "" : ": " + subject) + lesson;
         return Optional.of(new TimelineEntry(childId, EntryType.ATTENDANCE.name() + ":A" + attendance.id() + ":" + kind,
                 EntryType.ATTENDANCE, title, null, blankToNull(subject),

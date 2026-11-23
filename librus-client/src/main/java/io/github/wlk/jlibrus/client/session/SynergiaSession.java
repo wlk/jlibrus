@@ -128,6 +128,8 @@ public final class SynergiaSession {
         return result.isSuccess() && !after.isEmpty() && !after.equals(before);
     }
 
+    // loggedIn=false before the attempt is read by other methods when login throws; PMD sees only this method.
+    @SuppressWarnings("PMD.UnusedAssignment")
     private void passwordLogin() {
         Instant now = clock.instant();
         if (now.isBefore(blockedUntil)) {

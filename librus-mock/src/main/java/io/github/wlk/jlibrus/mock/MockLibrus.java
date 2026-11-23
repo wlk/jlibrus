@@ -50,6 +50,7 @@ public final class MockLibrus implements AutoCloseable {
     }
 
     /** Random port on localhost with the two demo children. */
+    @SuppressWarnings("PMD.AvoidUsingHardCodedIP") // the test mock must bind to loopback only
     public static MockLibrus startLocal(Clock clock) {
         return start("127.0.0.1", 0, null, clock, List.of(MockAccount.ola(), MockAccount.jan()));
     }

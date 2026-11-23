@@ -81,20 +81,20 @@ final class MessagesHandler {
         String path = ex.path();
         Matcher detail = DETAIL.matcher(path);
         Matcher attachment = ATTACHMENT.matcher(path);
-        if (path.equals("/api/me")) {
+        if ("/api/me".equals(path)) {
             ex.json(200, "{\"accountId\":\"" + (50_000 + state.account(login).orElseThrow().seed()) + "\"}");
-        } else if (path.equals("/api/inbox/unreadMessagesCount")) {
+        } else if ("/api/inbox/unreadMessagesCount".equals(path)) {
             long unread = fixtures.inbox().stream().filter(m -> !state.isRead(login, m.id())).count();
             ex.json(200, "{\"data\":{\"inbox\":" + unread + ",\"notes\":0,\"alerts\":0,\"substitutions\":0}}");
-        } else if (path.equals("/api/inbox/messages")) {
+        } else if ("/api/inbox/messages".equals(path)) {
             ex.json(200, fixtures.inboxPage(page(ex), limit(ex), id -> state.isRead(login, id)).toString());
-        } else if (path.equals("/api/outbox/messages")) {
+        } else if ("/api/outbox/messages".equals(path)) {
             ex.json(200, outbox(login).toString());
         } else if (detail.matches()) {
             detail(ex, login, fixtures, detail.group(1), detail.group(2));
-        } else if (path.equals("/api/receivers/types")) {
+        } else if ("/api/receivers/types".equals(path)) {
             ex.json(200, MessageFixtures.receiverTypes().toString());
-        } else if (path.equals("/api/receivers/groups/school-employees")) {
+        } else if ("/api/receivers/groups/school-employees".equals(path)) {
             ex.json(200, MessageFixtures.receivers(ex.query().getOrDefault("receiverType", "")).toString());
         } else if (attachment.matches()) {
             ex.json(200, "{\"data\":{\"status\":\"ok\",\"downloadLink\":\"" + base + "/GetFile/" + attachment.group(1) + "\"}}");
@@ -114,7 +114,8 @@ final class MessagesHandler {
             ex.json(200, fixtures.detail(message.get(), LocalDateTime.now(state.clock().withZone(MockLibrus.ZONE))).toString());
             return;
         }
-        state.sentMessages().stream().filter(s -> s.login().equals(login) && String.valueOf(s.id()).equals(id))
+        state.sentMessages().stream()
+                .filter(s -> s.login().equals(login) && String.valueOf(s.id()).equals(id))
                 .findFirst()
                 .ifPresentOrElse(s -> ex.json(200, sentDetail(s).toString()), () -> ex.json(404, "{}"));
     }
@@ -144,7 +145,8 @@ final class MessagesHandler {
     private ObjectNode outbox(String login) {
         ArrayNode data = MAPPER.createArrayNode();
         state.sentMessages().stream().filter(s -> s.login().equals(login))
-                .forEach(s -> data.addObject().put("messageId", String.valueOf(s.id())).put("receiverName", s.recipients().toString())
+                .forEach(s -> data.addObject().put("messageId", String.valueOf(s.id()))
+                        .put("receiverName", s.recipients().toString())
                         .put("topic", s.topic()).put("content", encode(s.text()))
                         .put("sendDate", TS.format(LocalDateTime.ofInstant(s.at(), MockLibrus.ZONE)))
                         .putNull("readDate").put("isAnyFileAttached", false));

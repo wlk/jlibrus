@@ -108,7 +108,7 @@ public class FeedService {
         } catch (LibrusException e) {
             String previous = lastGood.get(feed.id());
             if (previous == null) {
-                throw new LibrusException.ServiceUnavailable("Calendar temporarily unavailable: " + e.getMessage());
+                throw new LibrusException.ServiceUnavailable("Calendar temporarily unavailable: " + e.getMessage(), e);
             }
             LOG.warnf("Feed %s served from last good copy: %s", feed.id(), e.getMessage());
             return previous;

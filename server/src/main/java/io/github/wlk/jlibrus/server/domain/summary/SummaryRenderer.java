@@ -3,7 +3,6 @@ package io.github.wlk.jlibrus.server.domain.summary;
 import io.github.wlk.jlibrus.server.domain.EntryType;
 import io.github.wlk.jlibrus.server.domain.Texts;
 import io.github.wlk.jlibrus.server.domain.TimelineEntry;
-import io.github.wlk.jlibrus.server.domain.agenda.AgendaItem;
 import io.github.wlk.jlibrus.server.domain.ical.When;
 
 import java.time.format.DateTimeFormatter;
@@ -38,7 +37,8 @@ public final class SummaryRenderer {
     }
 
     private static void section(StringBuilder out, Summary.ChildSection section, Locale locale) {
-        out.append("<h2 style=\"font-size:18px;border-bottom:1px solid #d9e2ec\">").append(escape(section.childName())).append("</h2>");
+        out.append("<h2 style=\"font-size:18px;border-bottom:1px solid #d9e2ec\">")
+                .append(escape(section.childName())).append("</h2>");
         out.append("<h3 style=\"font-size:15px\">").append(escape(Texts.get("summary.new", locale))).append("</h3>");
         if (section.news().isEmpty()) {
             out.append("<p>").append(escape(Texts.get("summary.nothing", locale))).append("</p>");
@@ -81,7 +81,8 @@ public final class SummaryRenderer {
             if (section.upcoming().isEmpty()) {
                 out.append("  ").append(Texts.get("summary.nothingUpcoming", locale)).append('\n');
             }
-            section.upcoming().forEach(i -> out.append("  ").append(when(i.when(), locale)).append("  ").append(i.title()).append('\n'));
+            section.upcoming().forEach(i -> out.append("  ").append(when(i.when(), locale)).append("  ")
+                    .append(i.title()).append('\n'));
             out.append('\n');
         }
         return out.append(Texts.get("summary.footer", locale)).append('\n').toString();

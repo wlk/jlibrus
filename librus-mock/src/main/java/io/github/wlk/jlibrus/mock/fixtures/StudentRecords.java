@@ -155,7 +155,8 @@ public final class StudentRecords {
         notice(items, "nb-" + today, "Zbiórka makulatury",
                 "W przyszłym tygodniu zbieramy makulaturę. Prosimy o przynoszenie jej do sali 14.", today, false);
         notice(items, "nb-open-day", "Dzień otwarty szkoły",
-                "Zapraszamy rodziców na dzień otwarty w sobotę.\nProgram: prezentacje klas, kiermasz.", today.minusDays(5), false);
+                "Zapraszamy rodziców na dzień otwarty w sobotę.\nProgram: prezentacje klas, kiermasz.",
+                today.minusDays(5), false);
         notice(items, "nb-rules", "Nowy regulamin szkoły", "Nowa wersja regulaminu jest dostępna w sekretariacie.",
                 today.minusDays(40), true);
         return Nodes.root("SchoolNotices", items);

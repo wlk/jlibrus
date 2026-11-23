@@ -51,7 +51,7 @@ public class DatabaseProducer {
             hikari.addDataSourceProperty("busy_timeout", "10000");
             hikari.addDataSourceProperty("foreign_keys", "true");
         }
-        LOG.infof("Using %s database", sqlite ? "SQLite" : "JDBC " + url.split(":")[1]);
+        LOG.infof("Using %s database", sqlite ? "SQLite" : "JDBC " + url.split(":", -1)[1]);
         return new HikariDataSource(hikari);
     }
 
@@ -76,6 +76,9 @@ public class DatabaseProducer {
             return;
         }
         Path parent = Path.of(path).toAbsolutePath().getParent();
+        if (parent == null) {
+            return;
+        }
         try {
             Files.createDirectories(parent);
         } catch (IOException e) {

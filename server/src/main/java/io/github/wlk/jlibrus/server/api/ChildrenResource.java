@@ -124,7 +124,7 @@ public class ChildrenResource {
         try {
             return LocalDate.parse(date);
         } catch (DateTimeParseException e) {
-            throw new IllegalArgumentException("Invalid date, expected yyyy-MM-dd");
+            throw new IllegalArgumentException("Invalid date, expected yyyy-MM-dd", e);
         }
     }
 }

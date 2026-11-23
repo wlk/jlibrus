@@ -21,10 +21,6 @@ tasks.withType<JavaCompile>().configureEach {
     options.compilerArgs.add("-Werror")
 }
 
-tasks.javadoc {
-    (options as StandardJavadocDocletOptions).addStringOption("Xdoclint:none", "-quiet")
-}
-
 pitest {
     targetClasses.set(listOf("io.github.wlk.jlibrus.client.*"))
     mutationThreshold.set(80)

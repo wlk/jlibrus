@@ -93,7 +93,7 @@ public class SyncService {
             }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            throw new LibrusException.ServiceUnavailable("Interrupted while waiting for sync");
+            throw new LibrusException.ServiceUnavailable("Interrupted while waiting for sync", e);
         }
         try {
             forget.run();
