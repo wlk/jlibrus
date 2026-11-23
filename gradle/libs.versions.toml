@@ -1,0 +1,31 @@
+[versions]
+quarkus = "3.40.1"
+jackson = "2.21.7"
+junit = "6.1.3"
+assertj = "3.27.7"
+pitest = "1.30.2"
+pitestJunit5 = "1.2.3"
+pitestPlugin = "1.19.0"
+hikari = "7.1.0"
+flyway = "12.0.0"
+sqlite = "3.54.1.0"
+postgres = "42.7.13"
+testcontainers = "2.0.5"
+jacoco = "0.8.14"
+
+[libraries]
+jackson-databind = { module = "com.fasterxml.jackson.core:jackson-databind", version.ref = "jackson" }
+junit-bom = { module = "org.junit:junit-bom", version.ref = "junit" }
+junit-jupiter = { module = "org.junit.jupiter:junit-jupiter" }
+junit-launcher = { module = "org.junit.platform:junit-platform-launcher" }
+assertj = { module = "org.assertj:assertj-core", version.ref = "assertj" }
+hikari = { module = "com.zaxxer:HikariCP", version.ref = "hikari" }
+flyway-core = { module = "org.flywaydb:flyway-core", version.ref = "flyway" }
+flyway-postgres = { module = "org.flywaydb:flyway-database-postgresql", version.ref = "flyway" }
+sqlite-jdbc = { module = "org.xerial:sqlite-jdbc", version.ref = "sqlite" }
+postgres-jdbc = { module = "org.postgresql:postgresql", version.ref = "postgres" }
+testcontainers-postgres = { module = "org.testcontainers:testcontainers-postgresql", version.ref = "testcontainers" }
+testcontainers-junit = { module = "org.testcontainers:testcontainers-junit-jupiter", version.ref = "testcontainers" }
+
+[plugins]
+quarkus = { id = "io.quarkus", version.ref = "quarkus" }
