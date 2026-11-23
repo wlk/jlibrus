@@ -1,0 +1,14 @@
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+*.iml
+.idea/
+.vscode/
+out/
+.DS_Store
+*.db
+*.db-shm
+*.db-wal
+data/
+.env
+.claude/settings.local.json

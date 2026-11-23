@@ -1,0 +1,10 @@
+/build
+/*/build
+/buildSrc/build
+**/.gradle
+.git
+.idea
+.vscode
+data
+*.db
+.env

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Findings excluded project-wide, each with a reason. -->
+<FindBugsFilter>
+    <!-- Records and value types store List.copyOf/Map.copyOf (immutable) collections; SpotBugs cannot see that. -->
+    <Match>
+        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
+    </Match>
+    <!-- CDI beans are created by the container; constructor injection stores managed proxies by design. -->
+    <Match>
+        <Bug pattern="CT_CONSTRUCTOR_THROW"/>
+    </Match>
+    <!-- Summary e-mail HTML: every interpolated value goes through SummaryRenderer.escape (tested). -->
+    <Match>
+        <Class name="io.github.wlk.jlibrus.server.domain.summary.SummaryRenderer"/>
+        <Bug pattern="POTENTIAL_XML_INJECTION"/>
+    </Match>
+</FindBugsFilter>

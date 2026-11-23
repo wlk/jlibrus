@@ -1,0 +1,232 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  wrapper-validation:
+    name: Gradle wrapper validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: gradle/actions/wrapper-validation@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
+
+  build:
+    name: Tests, coverage >= 80%, CRAP gate
+    runs-on: ubuntu-latest
+    needs: wrapper-validation
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '25'
+      - uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
+      # Unit + integration tests (mock Librus only, PostgreSQL via Testcontainers), JaCoCo line coverage gate, CRAP < 10.
+      - run: ./gradlew test jacocoTestCoverageVerification crapCheck --console=plain
+      - name: Upload test and coverage reports
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-reports
+          path: |
+            **/build/reports/tests/
+            **/build/reports/jacoco/
+          retention-days: 14
+
+  static-analysis:
+    name: Static analysis (Error Prone, Checkstyle, PMD, CPD, SpotBugs, Javadoc)
+    runs-on: ubuntu-latest
+    needs: wrapper-validation
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '25'
+      - uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
+      # compileJava runs Error Prone; --continue reports every tool's findings in one run.
+      - run: ./gradlew compileJava checkstyleMain pmdMain cpdCheck spotbugsMain javadoc --continue --console=plain
+      - name: Upload spotbugs findings (librus-client)
+        if: always() && hashFiles('librus-client/build/reports/spotbugs/main.sarif') != ''
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: librus-client/build/reports/spotbugs/main.sarif
+          category: spotbugs-librus-client
+      - name: Upload spotbugs findings (librus-mock)
+        if: always() && hashFiles('librus-mock/build/reports/spotbugs/main.sarif') != ''
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: librus-mock/build/reports/spotbugs/main.sarif
+          category: spotbugs-librus-mock
+      - name: Upload spotbugs findings (server)
+        if: always() && hashFiles('server/build/reports/spotbugs/main.sarif') != ''
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: server/build/reports/spotbugs/main.sarif
+          category: spotbugs-server
+      - name: Upload checkstyle findings (librus-client)
+        if: always() && hashFiles('librus-client/build/reports/checkstyle/main.sarif') != ''
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: librus-client/build/reports/checkstyle/main.sarif
+          category: checkstyle-librus-client
+      - name: Upload checkstyle findings (librus-mock)
+        if: always() && hashFiles('librus-mock/build/reports/checkstyle/main.sarif') != ''
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: librus-mock/build/reports/checkstyle/main.sarif
+          category: checkstyle-librus-mock
+      - name: Upload checkstyle findings (server)
+        if: always() && hashFiles('server/build/reports/checkstyle/main.sarif') != ''
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: server/build/reports/checkstyle/main.sarif
+          category: checkstyle-server
+      - name: Upload analysis reports
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: static-analysis-reports
+          path: |
+            **/build/reports/checkstyle/
+            **/build/reports/pmd/
+            **/build/reports/cpd/
+            **/build/reports/spotbugs/
+          retention-days: 14
+
+  mutation:
+    name: Mutation testing (pitest)
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '25'
+      - uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
+      - run: ./gradlew :librus-client:pitest :librus-mock:pitest :server:pitest --console=plain
+      - name: Upload pitest reports
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: pitest-reports
+          path: '**/build/reports/pitest/'
+          retention-days: 14
+
+  docker:
+    name: Docker images + Trivy scan
+    runs-on: ubuntu-latest
+    needs: build
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+      - name: Build server image
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          target: server
+          load: true
+          tags: jlibrus/server:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: Build mock image
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          target: librus-mock
+          push: false
+          cache-from: type=gha
+      - name: Scan server image (report HIGH/CRITICAL to code scanning)
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: jlibrus/server:ci
+          format: sarif
+          output: trivy.sarif
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+      - name: Upload Trivy findings
+        if: always() && hashFiles('trivy.sarif') != ''
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: trivy.sarif
+          category: trivy-server-image
+      - name: Fail on fixable CRITICAL vulnerabilities
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: jlibrus/server:ci
+          severity: CRITICAL
+          ignore-unfixed: true
+          exit-code: '1'
+      - name: Validate compose file
+        env:
+          APP_PASSWORD: ci-only
+        run: docker compose -f docker-compose.yml config --quiet
+
+  # Submission and review need the repository's Dependency graph setting. While it is off, both are
+  # skipped with a warning instead of failing; they start running as soon as it is enabled.
+  dependency-graph-status:
+    name: Dependency graph availability
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      enabled: ${{ steps.probe.outputs.enabled }}
+    steps:
+      - id: probe
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh api "repos/${GITHUB_REPOSITORY}/dependency-graph/sbom" --silent 2>/dev/null; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "::warning title=Dependency graph disabled::Enable it in Settings > Advanced Security > Dependency graph to run dependency submission and review."
+          fi
+
+  dependency-graph:
+    name: Dependency graph submission
+    runs-on: ubuntu-latest
+    needs: [wrapper-validation, dependency-graph-status]
+    if: needs.dependency-graph-status.outputs.enabled == 'true'
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '25'
+      - uses: gradle/actions/dependency-submission@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
+
+  dependency-review:
+    name: Dependency review (new vulnerable or copyleft dependencies)
+    if: github.event_name == 'pull_request' && needs.dependency-graph-status.outputs.enabled == 'true'
+    runs-on: ubuntu-latest
+    needs: [dependency-graph-status, dependency-graph]
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/dependency-review-action@v5
+        with:
+          fail-on-severity: high
+          retry-on-snapshot-warnings: true
+          comment-summary-in-pr: on-failure
+          deny-licenses: AGPL-3.0-only, AGPL-3.0-or-later, GPL-3.0-only, GPL-3.0-or-later
