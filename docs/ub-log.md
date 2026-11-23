@@ -39,3 +39,4 @@ Chronological record of actions and the reason for each.
 | 33 | Pitest: library 82.7% -> 95.2%, server scope widened (persistence, account parsing, error mapping) 88.9% -> 91.5% over 755 mutants, mock logic added at 85.2%; thresholds 90/88/80 | User request; ub-mode Mutator: cover the uncovered, kill the survivors, delete dead code |
 | 34 | Survivors exposed dead code (redundant cookie filters, unused method, impossible null checks) - deleted rather than tested | Equivalent mutants point at code that does nothing |
 | 35 | Survivors exposed a real bug: cookies with `Domain=librus.pl` (no leading dot) were dropped because the JDK matcher follows RFC 2965; now RFC 6265 domain matching | Fix the root cause found by the tool |
+| 36 | Third-party GitHub Actions pinned to commit SHAs; NVD key exposed only to the scan step | Security review: mutable tags in jobs with write permissions are a supply-chain risk |
