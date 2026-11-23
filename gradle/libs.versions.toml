@@ -1,5 +1,5 @@
 [versions]
-quarkus = "3.40.1"
+quarkus = "4.0.0"
 opentelemetry = "1.67.0"
 # Security pins for transitive dependencies that plugins or the Quarkus platform hold back (see docs/ub-log.md).
 jacksonPatched = "2.22.4"
