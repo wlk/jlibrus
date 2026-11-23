@@ -11,3 +11,15 @@ Chronological record of actions and the reason for each.
 | 5 | Pure domain first: iCal writer, summary windows, e-mail value object, login throttle, secret tokens | Get the data shape right; business logic in pure functions, mutation-testable |
 | 6 | Portable SQL schema + Flyway, Hikari pool chosen at runtime by JDBC URL | SQLite and PostgreSQL from one build; repository contract test runs on both engines |
 | 7 | Idempotent summary dispatch (`claim` with `ON CONFLICT DO NOTHING`) | Re-running a scheduler tick or crashing mid-run must not double-send |
+| 8 | Library transport: `HttpClient` with redirects off, login hops walked by hand on an allow-list of Librus hosts | Never follow a redirect off Librus; see each step of the 2026 login chain |
+| 9 | Wrote `librus-mock` before relying on the client | Tests may not use the live platform; the mock also powers demo mode |
+| 10 | Replaced JDK `CookieManager` with an RFC 6265 jar | Mock test revealed `Max-Age` cookies were sent back as `$Version="1"` RFC 2965 cookies, which Librus would reject |
+| 11 | CRAP gate failed (6 methods) -> split classifiers into pure functions, added edge-case tests | ub-mode Crapper rule |
+| 12 | Pitest 72% -> 84% with scripted-HTTP edge-case suites; threshold raised to 80% | ub-mode Mutator rule: kill the survivors |
+| 13 | Renamed package to `io.github.wlk` mid-way | User request |
+| 14 | Agenda builder shared by dashboard, iCal and e-mail; timeline first-sync baseline | One decision in one place; first summary must not list the whole school year |
+| 15 | Dispatch claim before mailing, release on failure | Idempotent summaries (ub-mode: Make Operations Idempotent) |
+| 16 | `quarkus-jacoco` merged into the CRAP report | Gradle's agent cannot see classes loaded by `@QuarkusTest`; gate showed false 0% coverage |
+| 17 | Explicit JDBC driver class in Hikari | Root cause of "No suitable driver" after Quarkus tests: `DriverManager` caches drivers per class loader |
+| 18 | Security review fixes: global login throttle, trusted proxies, hard-capped throttle map, session-epoch revocation on logout, Mailpit on loopback | Findings of automated review were valid |
+| 19 | Renamed buildSrc package `build` -> `gradle` | Root cause of Docker build failure: `build/` ignore rules hid the CRAP sources from git and Docker |

@@ -4,8 +4,10 @@
 #   docker compose up -d --build    # app + PostgreSQL + Mailpit (test SMTP inbox)
 #
 # Demo without a real Librus account (offline mock with two fake children):
-#   LIBRUS_ENDPOINT_OVERRIDE=http://librus-mock:8090 docker compose --profile demo up -d --build
-#   (log in to Librus accounts 1234567u / demo and 7654321u / demo)
+#   APP_PASSWORD=demo LIBRUS_ENDPOINT_OVERRIDE=http://librus-mock:8090 \
+#   LIBRUS_ACCOUNT_1_LOGIN=1234567u LIBRUS_ACCOUNT_1_PASSWORD=demo \
+#   LIBRUS_ACCOUNT_2_LOGIN=7654321u LIBRUS_ACCOUNT_2_PASSWORD=demo \
+#   docker compose --profile demo up -d --build
 
 name: jlibrus
 
@@ -32,6 +34,16 @@ services:
       SMTP_FROM: ${SMTP_FROM:-jlibrus@localhost}
       SMTP_STARTTLS: ${SMTP_STARTTLS:-DISABLED}
       LIBRUS_ENDPOINT_OVERRIDE: ${LIBRUS_ENDPOINT_OVERRIDE:-}
+      # Children (more accounts: LIBRUS_ACCOUNT_4_... in .env, which is passed through as a whole)
+      LIBRUS_ACCOUNT_1_LOGIN: ${LIBRUS_ACCOUNT_1_LOGIN:-}
+      LIBRUS_ACCOUNT_1_PASSWORD: ${LIBRUS_ACCOUNT_1_PASSWORD:-}
+      LIBRUS_ACCOUNT_1_NAME: ${LIBRUS_ACCOUNT_1_NAME:-}
+      LIBRUS_ACCOUNT_2_LOGIN: ${LIBRUS_ACCOUNT_2_LOGIN:-}
+      LIBRUS_ACCOUNT_2_PASSWORD: ${LIBRUS_ACCOUNT_2_PASSWORD:-}
+      LIBRUS_ACCOUNT_2_NAME: ${LIBRUS_ACCOUNT_2_NAME:-}
+      LIBRUS_ACCOUNT_3_LOGIN: ${LIBRUS_ACCOUNT_3_LOGIN:-}
+      LIBRUS_ACCOUNT_3_PASSWORD: ${LIBRUS_ACCOUNT_3_PASSWORD:-}
+      LIBRUS_ACCOUNT_3_NAME: ${LIBRUS_ACCOUNT_3_NAME:-}
     ports:
       - "${HTTP_PORT:-8080}:8080"
     volumes:
@@ -55,12 +67,13 @@ services:
       timeout: 3s
       retries: 20
 
-  # Catches outgoing e-mail locally: web UI on http://localhost:8025. Point SMTP_* at a real server in production.
+  # Catches outgoing e-mail locally: web UI on http://localhost:8025 (loopback only - summaries contain
+  # children's data). Point SMTP_* at a real server in production.
   mailpit:
     image: axllent/mailpit:v1.34
     restart: unless-stopped
     ports:
-      - "${MAILPIT_PORT:-8025}:8025"
+      - "127.0.0.1:${MAILPIT_PORT:-8025}:8025"
 
   # Offline Librus imitation for demos and manual testing (profile "demo").
   librus-mock:
