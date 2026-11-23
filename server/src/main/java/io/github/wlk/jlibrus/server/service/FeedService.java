@@ -9,9 +9,8 @@ import io.github.wlk.jlibrus.server.domain.agenda.AgendaItem;
 import io.github.wlk.jlibrus.server.domain.ical.CalendarItem;
 import io.github.wlk.jlibrus.server.domain.ical.ICalendarWriter;
 import io.github.wlk.jlibrus.server.persistence.CalendarFeedRepository;
-import io.quarkus.runtime.StartupEvent;
+import io.quarkus.runtime.Startup;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.NotFoundException;
 import org.jboss.logging.Logger;
@@ -47,7 +46,8 @@ public class FeedService {
     }
 
     /** First start: one feed with every child and every calendar type except daily lessons. */
-    void createDefault(@Observes StartupEvent event) {
+    @Startup
+    void createDefault() {
         if (feeds.findAll().isEmpty()) {
             Set<EntryType> types = EnumSet.copyOf(EntryType.calendarTypes());
             types.remove(EntryType.LESSON);

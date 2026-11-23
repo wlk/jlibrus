@@ -31,7 +31,7 @@ public record GradeScale(double plus, double minus) {
         if (modifier.length() > 1) {
             return OptionalDouble.empty();
         }
-        double base = Integer.parseInt(matcher.group(2));
+        double base = Character.digit(matcher.group(2).charAt(0), 10);
         return OptionalDouble.of(switch (modifier) {
             case "+" -> base + plus;
             case "-" -> base - minus;

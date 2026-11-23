@@ -168,11 +168,24 @@ final class MessagesHandler {
     }
 
     private static int page(MockExchange ex) {
-        return Math.max(1, Integer.parseInt(ex.query().getOrDefault("page", "1")));
+        return positive(ex, "page", 1);
     }
 
     private static int limit(MockExchange ex) {
-        return Math.max(1, Integer.parseInt(ex.query().getOrDefault("limit", "10")));
+        return positive(ex, "limit", 10);
+    }
+
+    /** A malformed paging parameter falls back to its default instead of failing the request. */
+    private static int positive(MockExchange ex, String name, int fallback) {
+        String raw = ex.query().get(name);
+        if (raw == null) {
+            return fallback;
+        }
+        try {
+            return Math.max(1, Integer.parseInt(raw));
+        } catch (NumberFormatException e) {
+            return fallback;
+        }
     }
 
     private static String decode(String base64) {

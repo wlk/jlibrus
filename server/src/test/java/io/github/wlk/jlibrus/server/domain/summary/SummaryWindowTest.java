@@ -79,7 +79,7 @@ class SummaryWindowTest {
         SummaryWindow daily = SummaryWindow.of(Frequency.DAILY, NOW);
         java.time.Instant previous = NOW.minusDays(1).plusSeconds(35).toInstant();
 
-        SummaryWindow next = daily.continuingFrom(previous, Frequency.DAILY);
+        SummaryWindow next = daily.continuingFrom(previous);
 
         assertThat(next.newSince()).isEqualTo(previous);
         assertThat(next.newUntil()).isEqualTo(daily.newUntil());
@@ -90,16 +90,16 @@ class SummaryWindowTest {
     void catchesUpAfterMissedRunsButNotForever() {
         SummaryWindow daily = SummaryWindow.of(Frequency.DAILY, NOW);
 
-        assertThat(daily.continuingFrom(NOW.minusDays(2).toInstant(), Frequency.DAILY).newSince())
+        assertThat(daily.continuingFrom(NOW.minusDays(2).toInstant()).newSince())
                 .isEqualTo(NOW.minusDays(2).toInstant());
-        assertThat(daily.continuingFrom(NOW.minusDays(3).toInstant(), Frequency.DAILY).newSince())
+        assertThat(daily.continuingFrom(NOW.minusDays(3).toInstant()).newSince())
                 .isEqualTo(NOW.minusDays(3).toInstant());
-        assertThat(daily.continuingFrom(NOW.minusDays(4).toInstant(), Frequency.DAILY)).isEqualTo(daily);
-        assertThat(daily.continuingFrom(NOW.toInstant(), Frequency.DAILY)).isEqualTo(daily);
-        assertThat(daily.continuingFrom(null, Frequency.DAILY)).isEqualTo(daily);
+        assertThat(daily.continuingFrom(NOW.minusDays(4).toInstant())).isEqualTo(daily);
+        assertThat(daily.continuingFrom(NOW.toInstant())).isEqualTo(daily);
+        assertThat(daily.continuingFrom(null)).isEqualTo(daily);
         SummaryWindow monthly = SummaryWindow.of(Frequency.MONTHLY, NOW);
-        assertThat(monthly.continuingFrom(NOW.minusDays(80).toInstant(), Frequency.MONTHLY).newSince())
+        assertThat(monthly.continuingFrom(NOW.minusDays(80).toInstant()).newSince())
                 .isEqualTo(NOW.minusDays(80).toInstant());
-        assertThat(monthly.continuingFrom(NOW.minusDays(100).toInstant(), Frequency.MONTHLY)).isEqualTo(monthly);
+        assertThat(monthly.continuingFrom(NOW.minusDays(100).toInstant())).isEqualTo(monthly);
     }
 }

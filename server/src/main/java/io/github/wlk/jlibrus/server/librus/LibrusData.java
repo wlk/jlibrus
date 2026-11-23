@@ -7,9 +7,10 @@ import io.github.wlk.jlibrus.client.messages.Recipient;
 import io.github.wlk.jlibrus.client.model.TimetableEntry;
 import io.github.wlk.jlibrus.server.domain.student.Directory;
 import io.github.wlk.jlibrus.server.domain.student.StudentRecords;
-import io.quarkus.cache.CacheInvalidate;
+import io.quarkus.cache.Cache;
 import io.quarkus.cache.CacheInvalidateAll;
 import io.quarkus.cache.CacheKey;
+import io.quarkus.cache.CacheName;
 import io.quarkus.cache.CacheResult;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -34,10 +35,12 @@ public class LibrusData {
     public static final String RECIPIENTS = "librus-recipients";
 
     private final Children children;
+    private final Cache directoryCache;
 
     @Inject
-    public LibrusData(Children children) {
+    public LibrusData(Children children, @CacheName(DIRECTORY) Cache directoryCache) {
         this.children = children;
+        this.directoryCache = directoryCache;
     }
 
     @CacheResult(cacheName = DIRECTORY)
@@ -86,9 +89,8 @@ public class LibrusData {
         // annotations do the work
     }
 
-    @CacheInvalidate(cacheName = DIRECTORY)
-    public void forgetDirectory(@CacheKey String childId) {
-        // annotations do the work
+    public void forgetDirectory(String childId) {
+        directoryCache.invalidate(childId).await().indefinitely();
     }
 
     @CacheInvalidateAll(cacheName = MESSAGES)

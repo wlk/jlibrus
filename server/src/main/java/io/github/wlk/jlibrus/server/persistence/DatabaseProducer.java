@@ -2,9 +2,8 @@ package io.github.wlk.jlibrus.server.persistence;
 
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
-import io.quarkus.runtime.ShutdownEvent;
+import io.quarkus.runtime.Shutdown;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.enterprise.event.Observes;
 import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Singleton;
 import org.flywaydb.core.Flyway;
@@ -86,7 +85,8 @@ public class DatabaseProducer {
         }
     }
 
-    void close(@Observes ShutdownEvent event) {
+    @Shutdown
+    void close() {
         if (dataSource != null) {
             dataSource.close();
         }

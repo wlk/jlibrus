@@ -137,7 +137,7 @@ public class SummaryService {
     SummaryWindow window(Frequency frequency, Instant at) {
         ZonedDateTime time = at.atZone(context.zone()).truncatedTo(ChronoUnit.MINUTES);
         Instant previous = settings.get(untilKey(frequency)).map(Instant::parse).orElse(null);
-        return SummaryWindow.of(frequency, time).continuingFrom(previous, frequency);
+        return SummaryWindow.of(frequency, time).continuingFrom(previous);
     }
 
     private static String untilKey(Frequency frequency) {

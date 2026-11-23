@@ -1,9 +1,8 @@
 package io.github.wlk.jlibrus.server.security;
 
 import io.github.wlk.jlibrus.server.persistence.SettingRepository;
-import io.quarkus.runtime.StartupEvent;
+import io.quarkus.runtime.Startup;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
 
 /** Current session epoch, persisted so revocation survives restarts. Single writer: {@link #bump()} is synchronized. */
@@ -21,17 +20,27 @@ public class SessionEpoch {
     }
 
     /** Loaded at startup so identity checks on the event loop never block on the database. */
-    void load(@Observes StartupEvent event) {
+    @Startup
+    void load() {
         current();
     }
 
     public long current() {
         Long value = current;
         if (value == null) {
-            value = settings.get(KEY).map(Long::parseLong).orElse(0L);
+            value = settings.get(KEY).map(SessionEpoch::parse).orElse(0L);
             current = value;
         }
         return value;
+    }
+
+    /** A damaged value must stop the server: silently restarting at 0 would revive revoked sessions. */
+    static long parse(String stored) {
+        try {
+            return Long.parseLong(stored);
+        } catch (NumberFormatException e) {
+            throw new IllegalStateException("Stored " + KEY + " is not a number; fix or delete it in app_setting", e);
+        }
     }
 
     /** Invalidates every session issued so far. */

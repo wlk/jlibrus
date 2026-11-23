@@ -36,7 +36,7 @@ public record SummaryWindow(Instant newSince, Instant newUntil, LocalDate upcomi
      * The same window, but "new" starts where the previous run of this frequency ended, so consecutive runs
      * neither drop nor repeat entries. Gaps longer than three periods (e.g. a long outage) are not caught up.
      */
-    public SummaryWindow continuingFrom(Instant previousUntil, Frequency frequency) {
+    public SummaryWindow continuingFrom(Instant previousUntil) {
         if (previousUntil == null || !previousUntil.isBefore(newUntil)) {
             return this;
         }

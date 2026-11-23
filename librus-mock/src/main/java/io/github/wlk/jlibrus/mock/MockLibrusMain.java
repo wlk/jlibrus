@@ -18,7 +18,7 @@ public final class MockLibrusMain {
     // binds to all interfaces inside its container; closed by the shutdown hook
     @SuppressWarnings({"PMD.AvoidUsingHardCodedIP", "PMD.CloseResource"})
     public static void main(String[] args) throws InterruptedException {
-        int port = Integer.parseInt(env("MOCK_PORT", "8090"));
+        int port = port(env("MOCK_PORT", "8090"));
         String host = env("MOCK_HOST", "0.0.0.0");
         String publicUrl = env("MOCK_PUBLIC_URL", "http://localhost:" + port);
         List<MockAccount> accounts = List.of(MockAccount.ola(), MockAccount.jan());
@@ -28,6 +28,14 @@ public final class MockLibrusMain {
                 + " (" + a.studentFirstName() + " " + a.studentLastName() + ")"));
         Runtime.getRuntime().addShutdownHook(new Thread(mock::close));
         Thread.currentThread().join();
+    }
+
+    private static int port(String raw) {
+        try {
+            return Integer.parseInt(raw);
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException("MOCK_PORT must be a number, got: " + raw, e);
+        }
     }
 
     private static String env(String name, String fallback) {

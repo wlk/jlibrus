@@ -46,7 +46,7 @@ public final class CrapCalculator {
         double coverage = total == 0 ? 1.0 : (double) instructions[1] / total;
         String line = method.getAttribute("line");
         return new MethodCrap(className, method.getAttribute("name"),
-                line.isEmpty() ? 0 : Integer.parseInt(line),
+                line.isEmpty() ? 0 : number(method, "line"),
                 complexity[0] + complexity[1], coverage);
     }
 
@@ -56,11 +56,20 @@ public final class CrapCalculator {
         for (int i = 0; i < counters.getLength(); i++) {
             Element counter = (Element) counters.item(i);
             if (type.equals(counter.getAttribute("type"))) {
-                return new int[]{Integer.parseInt(counter.getAttribute("missed")),
-                        Integer.parseInt(counter.getAttribute("covered"))};
+                return new int[]{number(counter, "missed"), number(counter, "covered")};
             }
         }
         return new int[]{0, 0};
+    }
+
+    private static int number(Element element, String attribute) {
+        String value = element.getAttribute(attribute);
+        try {
+            return Integer.parseInt(value);
+        } catch (NumberFormatException e) {
+            throw new IllegalStateException("Malformed JaCoCo report: <" + element.getTagName() + " " + attribute
+                    + "=\"" + value + "\">", e);
+        }
     }
 
     private static Document parseSecurely(InputStream xml) {

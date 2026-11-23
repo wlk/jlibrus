@@ -76,6 +76,10 @@ async function networkFirst(request) {
 }
 
 self.addEventListener('message', (event) => {
+  // Only pages of this app may control the cache.
+  if (event.origin !== self.location.origin) {
+    return;
+  }
   if (event.data === 'logout') {
     caches.delete(API_CACHE);
   }

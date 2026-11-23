@@ -17,6 +17,9 @@ public final class SchoolFixtures {
     record Course(long subjectId, String name, String shortName, long teacherId, long roomId) {
     }
 
+    record Room(long id, String symbol, String name) {
+    }
+
     static final List<Staff> STAFF = List.of(
             new Staff(1001, "Anna", "Nowak"), new Staff(1002, "Piotr", "Wiśniewski"),
             new Staff(1003, "Marek", "Zieliński"), new Staff(1004, "Ewa", "Lis"),
@@ -99,12 +102,11 @@ public final class SchoolFixtures {
 
     public static ObjectNode classrooms() {
         ArrayNode items = Nodes.array();
-        String[][] rooms = {{"4001", "12", "Sala matematyczna"}, {"4002", "14", "Sala polonistyczna"},
-                {"4003", "21", "Sala językowa"}, {"4004", "h106", "Pracownia przyrodnicza"},
-                {"4005", "SG", "Sala gimnastyczna"}, {"4006", "8", "Sala artystyczna"}, {"4007", "31", "Pracownia komputerowa"}};
-        for (String[] room : rooms) {
-            items.addObject().put("Id", Long.parseLong(room[0])).put("Symbol", room[1]).put("Name", room[2]);
-        }
+        List<Room> rooms = List.of(new Room(4001, "12", "Sala matematyczna"), new Room(4002, "14", "Sala polonistyczna"),
+                new Room(4003, "21", "Sala językowa"), new Room(4004, "h106", "Pracownia przyrodnicza"),
+                new Room(4005, "SG", "Sala gimnastyczna"), new Room(4006, "8", "Sala artystyczna"),
+                new Room(4007, "31", "Pracownia komputerowa"));
+        rooms.forEach(room -> items.addObject().put("Id", room.id()).put("Symbol", room.symbol()).put("Name", room.name()));
         return Nodes.root("Classrooms", items);
     }
 

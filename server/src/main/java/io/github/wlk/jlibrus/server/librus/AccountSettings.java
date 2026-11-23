@@ -39,13 +39,22 @@ public record AccountSettings(int index, String login, String password, String l
         source.forEach((rawKey, value) -> {
             Matcher matcher = KEY.matcher(normalise(rawKey));
             if (matcher.matches() && value != null && !value.isBlank()) {
-                byIndex.computeIfAbsent(Integer.parseInt(matcher.group(1)), i -> new TreeMap<>())
+                byIndex.computeIfAbsent(index(matcher.group(1)), i -> new TreeMap<>())
                         .put(matcher.group(2), value.trim());
             }
         });
         List<AccountSettings> result = new ArrayList<>();
         byIndex.forEach((index, fields) -> result.add(toSettings(index, fields)));
         return List.copyOf(result);
+    }
+
+    /** The key pattern allows 1-3 digits only; the catch guards future pattern changes. */
+    private static int index(String digits) {
+        try {
+            return Integer.parseInt(digits);
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException("Account number must be numeric: " + digits, e);
+        }
     }
 
     private static AccountSettings toSettings(int index, Map<String, String> fields) {

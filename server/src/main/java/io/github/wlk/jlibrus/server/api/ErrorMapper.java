@@ -21,11 +21,11 @@ public class ErrorMapper {
     public Response librus(LibrusException e) {
         LOG.warnf("Librus call failed: %s", e.getMessage());
         return switch (e) {
-            case LibrusException.InvalidCredentials ignored -> error(502, "librus_credentials", e.getMessage());
-            case LibrusException.CaptchaRequired ignored -> error(502, "librus_captcha", e.getMessage());
-            case LibrusException.ModuleUnavailable ignored -> error(404, "librus_module_unavailable", e.getMessage());
-            case LibrusException.ServiceUnavailable ignored -> Response.fromResponse(
-                    error(503, "librus_unavailable", e.getMessage())).header("Retry-After", RETRY_AFTER_SECONDS).build();
+            case LibrusException.InvalidCredentials invalid -> error(502, "librus_credentials", invalid.getMessage());
+            case LibrusException.CaptchaRequired captcha -> error(502, "librus_captcha", captcha.getMessage());
+            case LibrusException.ModuleUnavailable module -> error(404, "librus_module_unavailable", module.getMessage());
+            case LibrusException.ServiceUnavailable down -> Response.fromResponse(
+                    error(503, "librus_unavailable", down.getMessage())).header("Retry-After", RETRY_AFTER_SECONDS).build();
             default -> error(502, "librus_error", e.getMessage());
         };
     }

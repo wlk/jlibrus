@@ -112,7 +112,7 @@ public final class MessagesClient {
         root.putNull("storageId");
         root.put("category", "normal");
         if (message.replyToId() != null) {
-            root.put("originalMessageId", Long.parseLong(message.replyToId()));
+            root.put("originalMessageId", messageNumber(message.replyToId()));
         }
         return root.toString();
     }
@@ -184,6 +184,15 @@ public final class MessagesClient {
     private static void requireNumeric(String id) {
         if (id == null || !id.matches("[0-9]{1,18}")) {
             throw new IllegalArgumentException("Message and attachment ids are numeric");
+        }
+    }
+
+    /** Ids reaching here passed {@link OutgoingMessage} validation (1-18 digits); the catch guards future changes. */
+    private static long messageNumber(String id) {
+        try {
+            return Long.parseLong(id);
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException("Message ids are numeric", e);
         }
     }
 

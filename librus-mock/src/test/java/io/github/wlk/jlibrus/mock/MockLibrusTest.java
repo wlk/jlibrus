@@ -115,6 +115,8 @@ class MockLibrusTest {
         openMessages();
 
         assertThat(json(browser.get("/api/inbox/messages?page=1&limit=2")).path("total").asInt()).isEqualTo(3);
+        assertThat(json(browser.get("/api/inbox/messages?page=first&limit=all")).path("data")).hasSize(3);
+        assertThat(json(browser.get("/api/inbox/messages?page=0&limit=0")).path("data")).hasSize(1);
         assertThat(json(browser.get("/api/inbox/unreadMessagesCount")).path("data").path("inbox").asInt()).isEqualTo(3);
         assertThat(json(browser.get("/api/inbox/messages/7003")).path("data").path("attachments")).hasSize(1);
         assertThat(json(browser.get("/api/inbox/unreadMessagesCount")).path("data").path("inbox").asInt()).isEqualTo(2);
