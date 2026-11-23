@@ -50,7 +50,7 @@ pitest {
     mutationThreshold.set(70)
 }
 
-tasks.named<io.github.wlk.jlibrus.build.CrapCheckTask>("crapCheck") {
+tasks.named<io.github.wlk.jlibrus.gradle.CrapCheckTask>("crapCheck") {
     // Generated/framework glue is excluded; everything else must stay under CRAP 10.
     excludedClassPrefixes.set(listOf("io.github.wlk.jlibrus.server.Main"))
 }

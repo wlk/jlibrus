@@ -1,4 +1,4 @@
-import io.github.wlk.jlibrus.build.CrapCheckTask
+import io.github.wlk.jlibrus.gradle.CrapCheckTask
 
 plugins {
     java
