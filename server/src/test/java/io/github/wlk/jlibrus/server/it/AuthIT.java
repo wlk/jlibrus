@@ -45,7 +45,7 @@ class AuthIT {
     void publicResourcesNeedNoLogin() {
         RestAssured.get("/q/health/ready").then().statusCode(200);
         RestAssured.get("/").then().statusCode(200).body(containsString("<html"));
-        RestAssured.get("/manifest.webmanifest").then().statusCode(200);
+        RestAssured.get("/manifest.webmanifest").then().statusCode(200).contentType(containsString("manifest+json"));
         RestAssured.get("/ical/not-a-token.ics").then().statusCode(404);
         RestAssured.get("/ical/" + "a".repeat(43) + ".ics").then().statusCode(404);
     }

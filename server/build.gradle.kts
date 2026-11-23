@@ -47,7 +47,7 @@ tasks.named<JacocoReport>("jacocoTestReport") {
 pitest {
     targetClasses.set(listOf("io.github.wlk.jlibrus.server.domain.*"))
     targetTests.set(listOf("io.github.wlk.jlibrus.server.domain.*"))
-    mutationThreshold.set(70)
+    mutationThreshold.set(75)
 }
 
 tasks.named<io.github.wlk.jlibrus.gradle.CrapCheckTask>("crapCheck") {

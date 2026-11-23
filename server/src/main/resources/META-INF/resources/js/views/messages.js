@@ -28,7 +28,7 @@ export async function render(container, params) {
           h('span', { class: 'spacer' }),
           h('span', { class: 'muted' }, fmtDateTime(m.sentAt))),
         h('div', { class: 'muted small' }, m.preview))))),
-    data.hasNext ? h('button', { class: 'secondary', on: { click: () => go(`messages/${mailbox}/${page + 1}`) } }, t('more')) : null);
+    data.page * data.limit < data.total ? h('button', { class: 'secondary', on: { click: () => go(`messages/${mailbox}/${page + 1}`) } }, t('more')) : null);
 }
 
 async function renderMessage(container, mailbox, id) {
