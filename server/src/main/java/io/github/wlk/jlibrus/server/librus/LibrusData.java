@@ -55,7 +55,7 @@ public class LibrusData {
         LibrusAccount a = children.account(childId);
         return new StudentRecords(a.grades(), a.behaviour(), a.attendances(), a.events(), a.homework(),
                 a.parentMeetings(), a.schoolFreeDays(), a.teacherAbsences(), a.announcements(), a.notes(),
-                a.luckyNumber());
+                a.luckyNumber(), a.descriptiveGrades(), a.justifications(), a.schoolTrips());
     }
 
     /** Lessons of the week starting on {@code monday}. */

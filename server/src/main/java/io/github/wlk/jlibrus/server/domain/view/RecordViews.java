@@ -6,9 +6,12 @@ import io.github.wlk.jlibrus.client.model.AttendanceKind;
 import io.github.wlk.jlibrus.client.model.AttendanceType;
 import io.github.wlk.jlibrus.client.model.BehaviourPoint;
 import io.github.wlk.jlibrus.client.model.Homework;
+import io.github.wlk.jlibrus.client.model.Justification;
+import io.github.wlk.jlibrus.client.model.JustificationStatus;
 import io.github.wlk.jlibrus.client.model.LessonStatus;
 import io.github.wlk.jlibrus.client.model.Note;
 import io.github.wlk.jlibrus.client.model.NotePolarity;
+import io.github.wlk.jlibrus.client.model.SchoolTrip;
 import io.github.wlk.jlibrus.client.model.TimetableEntry;
 import io.github.wlk.jlibrus.server.domain.EntryType;
 import io.github.wlk.jlibrus.server.domain.agenda.AgendaItem;
@@ -34,7 +37,18 @@ public final class RecordViews {
     public record AttendanceStats(int lessons, Map<AttendanceKind, Integer> byKind, Double presencePercent) {
     }
 
-    public record AttendanceReport(AttendanceStats stats, List<AttendanceView> absences) {
+    public record AttendanceReport(AttendanceStats stats, List<AttendanceView> absences,
+                                   List<JustificationView> justifications) {
+    }
+
+    /** An absence justification and the school's decision. */
+    public record JustificationView(long id, JustificationStatus status, String message, LocalDateTime postedAt,
+                                    LocalDate from, LocalDate to, int justifiedAbsences, boolean hasAttachment,
+                                    List<String> teachers) {
+    }
+
+    public record TripView(long id, String destination, String route, String transport, LocalDate from, LocalDate to,
+                           String coordinator) {
     }
 
     public record LessonView(LocalDate date, int lessonNo, LocalTime from, LocalTime to, String subject, String teacher,
@@ -62,7 +76,8 @@ public final class RecordViews {
     private RecordViews() {
     }
 
-    public static AttendanceReport attendance(Directory directory, List<Attendance> records) {
+    public static AttendanceReport attendance(Directory directory, List<Attendance> records,
+                                              List<Justification> justifications) {
         Map<AttendanceKind, Integer> counts = new EnumMap<>(AttendanceKind.class);
         for (AttendanceKind kind : AttendanceKind.values()) {
             counts.put(kind, 0);
@@ -77,7 +92,9 @@ public final class RecordViews {
                         .thenComparing(a -> a.lessonNo() == null ? 0 : a.lessonNo()))
                 .map(a -> attendanceView(directory, a))
                 .toList();
-        return new AttendanceReport(new AttendanceStats(total, Map.copyOf(counts), percent), absences);
+        return new AttendanceReport(new AttendanceStats(total, Map.copyOf(counts), percent), absences,
+                justifications.stream().map(j -> new JustificationView(j.id(), j.status(), j.message(), j.postedAt(),
+                        j.from(), j.to(), j.justifiedAbsences(), j.hasAttachment(), j.notifiedTeachers())).toList());
     }
 
     private static AttendanceKind kind(Directory directory, Attendance attendance) {
@@ -90,6 +107,11 @@ public final class RecordViews {
         return new AttendanceView(a.id(), a.date(), a.lessonNo(), subject, type == null ? "" : type.name(),
                 type == null ? "" : type.shortName(), kind(directory, a), directory.personName(a.teacherId()),
                 type == null || type.colorRgb().isBlank() ? null : "#" + type.colorRgb());
+    }
+
+    public static List<TripView> trips(List<SchoolTrip> trips) {
+        return trips.stream().map(t -> new TripView(t.id(), t.destination(), t.route(), t.transport(), t.from(), t.to(),
+                t.coordinator())).toList();
     }
 
     public static List<LessonView> lessons(Directory directory, List<TimetableEntry> entries) {

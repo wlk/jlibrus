@@ -7,6 +7,11 @@ import io.github.wlk.jlibrus.client.model.AttendanceKind;
 import io.github.wlk.jlibrus.client.model.AttendanceType;
 import io.github.wlk.jlibrus.client.model.BehaviourPoint;
 import io.github.wlk.jlibrus.client.model.CalendarEvent;
+import io.github.wlk.jlibrus.client.model.DescriptiveGrade;
+import io.github.wlk.jlibrus.client.model.Justification;
+import io.github.wlk.jlibrus.client.model.JustificationStatus;
+import io.github.wlk.jlibrus.client.model.JustifiedLesson;
+import io.github.wlk.jlibrus.client.model.SchoolTrip;
 import io.github.wlk.jlibrus.client.model.Classroom;
 import io.github.wlk.jlibrus.client.model.EventCategory;
 import io.github.wlk.jlibrus.client.model.FreeDay;
@@ -88,7 +93,15 @@ public final class TestStudent {
                         new TeacherAbsence(97, 11L, TODAY, TODAY, LocalTime.of(10, 0), LocalTime.of(11, 0))),
                 List.of(new Announcement("nb-1", "Zbiórka", "Makulatura", TODAY, TODAY.plusDays(30), 12L, added, false)),
                 List.of(new Note(50, "Rozmowy", 60L, 12L, TODAY.minusDays(1), NotePolarity.NEGATIVE)),
-                Optional.of(new LuckyNumber(7, TODAY)));
+                Optional.of(new LuckyNumber(7, TODAY)),
+                List.of(new DescriptiveGrade("1", 100L, "6", "Liczenie", 11L, TODAY, added, 1, List.of("Brawo"), List.of(),
+                                DescriptiveGrade.DescriptiveSystem.CLASSIC),
+                        new DescriptiveGrade("p11", null, "B", "Czytanie", null, TODAY.minusDays(1), null, 1, List.of(),
+                                List.of("Czyta teksty"), DescriptiveGrade.DescriptiveSystem.PARTIAL)),
+                List.of(new Justification(3, JustificationStatus.ACCEPTED, "Choroba", added.minusDays(1), TODAY.minusDays(3),
+                        TODAY.minusDays(2), List.of(new JustifiedLesson(TODAY.minusDays(3), 1)), 2, false, List.of("Anna Nowak"))),
+                List.of(new SchoolTrip(8, "Teatr Lalek", "Szkoła - Teatr", "autokar", TODAY.plusDays(16), TODAY.plusDays(16),
+                        "Nowak Anna")));
     }
 
     public static List<TimetableEntry> timetable() {

@@ -5,6 +5,7 @@ import io.github.wlk.jlibrus.client.model.FreeDay;
 import io.github.wlk.jlibrus.client.model.Homework;
 import io.github.wlk.jlibrus.client.model.LessonStatus;
 import io.github.wlk.jlibrus.client.model.ParentMeeting;
+import io.github.wlk.jlibrus.client.model.SchoolTrip;
 import io.github.wlk.jlibrus.client.model.TeacherAbsence;
 import io.github.wlk.jlibrus.client.model.TimetableEntry;
 import io.github.wlk.jlibrus.server.domain.EntryType;
@@ -45,6 +46,7 @@ public final class AgendaBuilder {
         records.meetings().stream().filter(m -> m.date() != null).map(this::meeting).forEach(items::add);
         records.freeDays().stream().filter(d -> d.from() != null).map(this::freeDay).forEach(items::add);
         records.teacherAbsences().stream().filter(t -> t.from() != null).map(this::teacherAbsence).forEach(items::add);
+        records.trips().stream().filter(t -> t.from() != null).map(this::trip).forEach(items::add);
         timetable.forEach(entry -> items.add(entry.status() == LessonStatus.NORMAL ? lesson(entry) : change(entry)));
         items.sort(Comparator.comparing((AgendaItem i) -> i.when().firstDay()).thenComparing(AgendaBuilder::startTime)
                 .thenComparing(AgendaItem::uid));
@@ -112,6 +114,14 @@ public final class AgendaBuilder {
                 EntryType.TEACHER_ABSENCE,
                 Texts.get("teacherAbsent", locale) + ": " + directory.personName(absence.teacherId()),
                 null, null, null, when);
+    }
+
+    AgendaItem trip(SchoolTrip trip) {
+        LocalDate to = trip.to() == null || trip.to().isBefore(trip.from()) ? trip.from() : trip.to();
+        String detail = join(" · ", trip.route(), trip.transport(), trip.coordinator());
+        return new AgendaItem(uid(EntryType.SCHOOL_TRIP, String.valueOf(trip.id())), childId, EntryType.SCHOOL_TRIP,
+                Texts.get("trip", locale) + ": " + trip.destination(), blankToNull(detail), null, null,
+                new When.AllDay(trip.from(), to));
     }
 
     AgendaItem change(TimetableEntry entry) {

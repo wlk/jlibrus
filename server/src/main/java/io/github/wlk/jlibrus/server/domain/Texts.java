@@ -33,7 +33,11 @@ public final class Texts {
             entry("summary.nothingUpcoming", "Brak zaplanowanych wydarzeń.", "Nothing scheduled."),
             entry("summary.footer", "Wiadomość wysłana automatycznie przez jlibrus.",
                     "Sent automatically by jlibrus."),
-            entry("allDay", "cały dzień", "all day"));
+            entry("allDay", "cały dzień", "all day"),
+            entry("trip", "Wycieczka", "School trip"),
+            entry("justification.PENDING", "Usprawiedliwienie wysłane", "Justification sent"),
+            entry("justification.ACCEPTED", "Usprawiedliwienie zaakceptowane", "Justification accepted"),
+            entry("justification.REJECTED", "Usprawiedliwienie odrzucone", "Justification rejected"));
 
     private Texts() {
     }

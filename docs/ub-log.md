@@ -29,3 +29,6 @@ Chronological record of actions and the reason for each.
 | 23 | Sync: per-child isolation of every error, directory refetch on unknown ids (rate limited), first sync postponed until the inbox is readable | Timeline rows are write-once, so wrong names or a missing baseline were permanent |
 | 24 | Library serializes requests per account (fair lock) | A relogin could race in-flight requests; matches the "no bursts" rule |
 | 25 | Service worker: stale-while-revalidate shell, cache cleared on any 401 | Deploys never reached installed clients; revoked sessions left data readable offline |
+| 26 | Added justifications, school trips and both descriptive grading systems end to end (library, mock, timeline, agenda, views, API, UI) | User request; endpoint shapes taken from a public client's live-confirmed fixtures |
+| 27 | Justification timeline key includes the status | The school's decision (accepted/rejected) must arrive as a new summary entry |
+| 28 | School-wide descriptive skill list fetched only when descriptive grades exist | ~330 KB per call; most children have none |

@@ -74,6 +74,23 @@ class TimelineExtractorTest {
     }
 
     @Test
+    void descriptiveGradesAndJustificationDecisions() {
+        TimelineEntry classic = byKey.get("DESCRIPTIVE_GRADE:D1");
+        assertThat(classic.title()).isEqualTo("Matematyka: 6 – Liczenie");
+        assertThat(classic.detail()).isEqualTo("Brawo");
+        assertThat(classic.author()).isEqualTo("Anna Nowak");
+        TimelineEntry partial = byKey.get("DESCRIPTIVE_GRADE:Dp11");
+        assertThat(partial.title()).isEqualTo("Czytanie: B");
+        assertThat(partial.detail()).isEqualTo("Czyta teksty");
+        assertThat(partial.occursOn()).isEqualTo(TODAY.minusDays(1));
+
+        TimelineEntry justification = byKey.get("JUSTIFICATION:J3:ACCEPTED");
+        assertThat(justification.title()).isEqualTo("Usprawiedliwienie zaakceptowane: 2026-11-20 – 2026-11-21");
+        assertThat(justification.detail()).isEqualTo("Choroba");
+        assertThat(justification.author()).isEqualTo("Anna Nowak");
+    }
+
+    @Test
     void englishWording() {
         var english = new TimelineExtractor("c", TestStudent.directory(), WARSAW, Locale.ENGLISH)
                 .extract(TestStudent.records(), List.of(), List.of());

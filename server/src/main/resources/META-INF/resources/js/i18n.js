@@ -29,7 +29,10 @@ const DICT = {
     enabled: 'Włączone', add: 'Dodaj', sendTest: 'Wyślij teraz', preview: 'Podgląd', schedule: 'Harmonogram',
     refresh: 'Odśwież dane z Librusa', refreshed: 'Dane odświeżone.', confirmDelete: 'Na pewno usunąć?', confirmReset: 'Stary adres przestanie działać. Kontynuować?',
     error: 'Błąd', offline: 'Brak połączenia – pokazuję zapisane dane.', moduleUnavailable: 'Moduł niedostępny dla tego konta.',
-    loading: 'Ładowanie…', positive: 'pozytywna', negative: 'negatywna', neutral: 'neutralna'
+    loading: 'Ładowanie…', positive: 'pozytywna', negative: 'negatywna', neutral: 'neutralna',
+    descriptiveGrades: 'Oceny opisowe', skill: 'umiejętność', requirements: 'wymagania',
+    justifications: 'Usprawiedliwienia', just_PENDING: 'oczekuje', just_ACCEPTED: 'zaakceptowane', just_REJECTED: 'odrzucone',
+    justifiedAbsences: 'usprawiedliwionych nieobecności', sentOn: 'wysłane'
   },
   en: {
     menu: 'Menu', child: 'Child', language: 'Language',
@@ -60,7 +63,10 @@ const DICT = {
     enabled: 'Enabled', add: 'Add', sendTest: 'Send now', preview: 'Preview', schedule: 'Schedule',
     refresh: 'Refresh data from Librus', refreshed: 'Data refreshed.', confirmDelete: 'Delete for sure?', confirmReset: 'The old address will stop working. Continue?',
     error: 'Error', offline: 'Offline - showing saved data.', moduleUnavailable: 'Module not available for this account.',
-    loading: 'Loading…', positive: 'positive', negative: 'negative', neutral: 'neutral'
+    loading: 'Loading…', positive: 'positive', negative: 'negative', neutral: 'neutral',
+    descriptiveGrades: 'Descriptive grades', skill: 'skill', requirements: 'requirements',
+    justifications: 'Absence justifications', just_PENDING: 'pending', just_ACCEPTED: 'accepted', just_REJECTED: 'rejected',
+    justifiedAbsences: 'absences excused', sentOn: 'sent'
   }
 };
 

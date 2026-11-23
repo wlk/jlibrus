@@ -119,4 +119,26 @@ class AgendaBuilderTest {
     void joinSkipsBlanks() {
         assertThat(AgendaBuilder.join(", ", " a ", null, "", "b")).isEqualTo("a, b");
     }
+
+    @Test
+    void schoolTripsAreAllDayWithRouteTransportAndCoordinator() {
+        AgendaItem trip = find("school_trip-1234567u-8");
+
+        assertThat(trip.type()).isEqualTo(EntryType.SCHOOL_TRIP);
+        assertThat(trip.title()).isEqualTo("Wycieczka: Teatr Lalek");
+        assertThat(trip.detail()).isEqualTo("Szkoła - Teatr · autokar · Nowak Anna");
+        assertThat(trip.when()).isEqualTo(When.AllDay.single(TODAY.plusDays(16)));
+    }
+
+    @Test
+    void tripsWithoutStartAreSkippedAndInvertedEndsClamped() {
+        var noStart = new io.github.wlk.jlibrus.client.model.SchoolTrip(1, "Kino", "", "", null, null, null);
+        var inverted = new io.github.wlk.jlibrus.client.model.SchoolTrip(2, "Kino", "", "", TODAY, TODAY.minusDays(1), null);
+
+        assertThat(builder.trip(inverted).when()).isEqualTo(When.AllDay.single(TODAY));
+        assertThat(builder.trip(inverted).detail()).isNull();
+        assertThat(builder.build(new io.github.wlk.jlibrus.server.domain.student.StudentRecords(List.of(), List.of(),
+                List.of(), List.of(), List.of(), List.of(), List.of(), List.of(), List.of(), List.of(),
+                java.util.Optional.empty(), List.of(), List.of(), List.of(noStart)), List.of())).isEmpty();
+    }
 }

@@ -2,11 +2,14 @@ package io.github.wlk.jlibrus.server.domain.view;
 
 import io.github.wlk.jlibrus.client.grades.GradeAverages;
 import io.github.wlk.jlibrus.client.grades.GradeScale;
+import io.github.wlk.jlibrus.client.model.DescriptiveGrade;
+import io.github.wlk.jlibrus.client.model.DescriptiveGrade.DescriptiveSystem;
 import io.github.wlk.jlibrus.client.model.Grade;
 import io.github.wlk.jlibrus.client.model.GradeCategory;
 import io.github.wlk.jlibrus.client.model.GradeKind;
 import io.github.wlk.jlibrus.server.domain.student.Directory;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.List;
@@ -29,7 +32,33 @@ public final class GradeViews {
                                 List<GradeView> summary) {
     }
 
+    /** A descriptive grade with names resolved. */
+    public record DescriptiveView(String id, String value, String skill, String teacher, LocalDate date,
+                                  List<String> comments, List<String> requirements, DescriptiveSystem system) {
+    }
+
+    /** Descriptive grades of one subject, newest first. */
+    public record DescriptiveSubject(String subject, List<DescriptiveView> grades) {
+    }
+
     private GradeViews() {
+    }
+
+    public static List<DescriptiveSubject> descriptive(Directory directory, List<DescriptiveGrade> grades) {
+        Map<String, List<DescriptiveGrade>> bySubject = grades.stream().collect(Collectors.groupingBy(
+                g -> directory.subjectName(g.subjectId())));
+        return bySubject.entrySet().stream()
+                .map(e -> new DescriptiveSubject(e.getKey(), e.getValue().stream()
+                        .sorted(Comparator.comparing(GradeViews::day, Comparator.nullsLast(Comparator.reverseOrder())))
+                        .map(g -> new DescriptiveView(g.id(), g.value(), g.skill(), directory.personName(g.teacherId()),
+                                day(g), g.comments(), g.requirements(), g.system()))
+                        .toList()))
+                .sorted(Comparator.comparing(DescriptiveSubject::subject, String.CASE_INSENSITIVE_ORDER))
+                .toList();
+    }
+
+    private static LocalDate day(DescriptiveGrade grade) {
+        return grade.date() != null ? grade.date() : grade.addedAt() == null ? null : grade.addedAt().toLocalDate();
     }
 
     public static List<SubjectGrades> bySubject(Directory directory, List<Grade> grades, GradeScale scale) {

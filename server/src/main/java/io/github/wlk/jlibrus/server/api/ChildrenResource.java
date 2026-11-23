@@ -52,6 +52,18 @@ public class ChildrenResource {
     }
 
     @GET
+    @Path("/{id}/descriptive-grades")
+    public List<GradeViews.DescriptiveSubject> descriptiveGrades(@PathParam("id") String id) {
+        return children.descriptiveGrades(id);
+    }
+
+    @GET
+    @Path("/{id}/trips")
+    public List<RecordViews.TripView> trips(@PathParam("id") String id) {
+        return children.trips(id);
+    }
+
+    @GET
     @Path("/{id}/attendance")
     public RecordViews.AttendanceReport attendance(@PathParam("id") String id) {
         return children.attendance(id);

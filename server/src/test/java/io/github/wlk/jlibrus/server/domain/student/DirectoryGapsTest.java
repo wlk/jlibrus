@@ -22,7 +22,7 @@ class DirectoryGapsTest {
     private static StudentRecords with(List<Grade> grades, List<Attendance> attendances, List<CalendarEvent> events,
                                        List<Note> notes) {
         return new StudentRecords(grades, List.of(), attendances, events, List.of(), List.of(), List.of(), List.of(),
-                List.of(), notes, Optional.empty());
+                List.of(), notes, Optional.empty(), List.of(), List.of(), List.of());
     }
 
     private static Grade grade(long subject, Long category, Long teacher) {

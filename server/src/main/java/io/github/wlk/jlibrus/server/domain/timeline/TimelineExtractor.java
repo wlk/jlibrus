@@ -5,7 +5,9 @@ import io.github.wlk.jlibrus.client.model.Announcement;
 import io.github.wlk.jlibrus.client.model.Attendance;
 import io.github.wlk.jlibrus.client.model.AttendanceKind;
 import io.github.wlk.jlibrus.client.model.BehaviourPoint;
+import io.github.wlk.jlibrus.client.model.DescriptiveGrade;
 import io.github.wlk.jlibrus.client.model.Grade;
+import io.github.wlk.jlibrus.client.model.Justification;
 import io.github.wlk.jlibrus.client.model.LuckyNumber;
 import io.github.wlk.jlibrus.client.model.Note;
 import io.github.wlk.jlibrus.server.domain.EntryType;
@@ -16,12 +18,14 @@ import io.github.wlk.jlibrus.server.domain.student.Directory;
 import io.github.wlk.jlibrus.server.domain.student.StudentRecords;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 /**
  * Converts a child's current data into timeline entries with stable keys, so a sync can store what it has
@@ -44,6 +48,8 @@ public final class TimelineExtractor {
     public List<TimelineEntry> extract(StudentRecords records, List<AgendaItem> agenda, List<MessageSummary> inbox) {
         List<TimelineEntry> entries = new ArrayList<>();
         records.grades().forEach(g -> entries.add(grade(g)));
+        records.descriptiveGrades().forEach(g -> entries.add(descriptive(g)));
+        records.justifications().forEach(j -> entries.add(justification(j)));
         records.behaviour().forEach(b -> entries.add(behaviour(b)));
         records.attendances().stream().map(this::attendance).flatMap(Optional::stream).forEach(entries::add);
         records.notes().forEach(n -> entries.add(note(n)));
@@ -62,6 +68,39 @@ public final class TimelineExtractor {
         String detail = String.join(" · ", List.of(category, comments).stream().filter(s -> !s.isBlank()).toList());
         return entry(EntryType.GRADE, "G" + grade.id(), subject + ": " + grade.value(), detail, subject,
                 directory.personName(grade.teacherId()), grade.addedAt(), grade.addedAt());
+    }
+
+    TimelineEntry descriptive(DescriptiveGrade grade) {
+        String subject = directory.subjectName(grade.subjectId());
+        String skill = grade.skill() == null ? "" : grade.skill();
+        String title = subject.isEmpty()
+                ? (skill.isEmpty() ? "?" : skill) + ": " + grade.value()
+                : subject + ": " + grade.value() + optionalSuffix(skill);
+        String detail = String.join("; ", Stream.concat(grade.comments().stream(),
+                grade.requirements().stream()).toList());
+        LocalDateTime added = grade.addedAt();
+        LocalDate day = grade.date() != null ? grade.date() : added == null ? null : added.toLocalDate();
+        return new TimelineEntry(childId, key(EntryType.DESCRIPTIVE_GRADE, "D" + grade.id()), EntryType.DESCRIPTIVE_GRADE,
+                title, blankToNull(detail), blankToNull(subject), blankToNull(directory.personName(grade.teacherId())),
+                day, instant(added), placeholder());
+    }
+
+    /** Keyed by status, so the school's decision on a justification shows up as a new entry. */
+    TimelineEntry justification(Justification justification) {
+        String title = Texts.get("justification." + justification.status().name(), locale)
+                + range(justification.from(), justification.to());
+        return new TimelineEntry(childId,
+                key(EntryType.JUSTIFICATION, "J" + justification.id() + ":" + justification.status()),
+                EntryType.JUSTIFICATION, title, blankToNull(justification.message()), null,
+                blankToNull(String.join(", ", justification.notifiedTeachers())), justification.from(),
+                instant(justification.postedAt()), placeholder());
+    }
+
+    static String range(LocalDate from, LocalDate to) {
+        if (from == null) {
+            return "";
+        }
+        return to == null || to.equals(from) ? ": " + from : ": " + from + " – " + to;
     }
 
     TimelineEntry behaviour(BehaviourPoint point) {

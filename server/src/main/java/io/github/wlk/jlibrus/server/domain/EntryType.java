@@ -11,10 +11,13 @@ import java.util.stream.Collectors;
  */
 public enum EntryType {
     GRADE("Grades", "Oceny", false),
+    DESCRIPTIVE_GRADE("Descriptive grades", "Oceny opisowe", false),
     BEHAVIOUR_GRADE("Behaviour grades", "Oceny z zachowania", false),
     ATTENDANCE("Absences and lateness", "Nieobecności i spóźnienia", false),
+    JUSTIFICATION("Absence justifications", "Usprawiedliwienia", false),
     NOTE("Behaviour notes", "Uwagi", false),
     EVENT("Tests and calendar events", "Sprawdziany i wydarzenia", true),
+    SCHOOL_TRIP("School trips", "Wycieczki szkolne", true),
     HOMEWORK("Homework", "Zadania domowe", true),
     ANNOUNCEMENT("Announcements", "Ogłoszenia", false),
     MESSAGE("Messages", "Wiadomości", false),

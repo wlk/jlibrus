@@ -1,5 +1,5 @@
 // Service worker: app shell offline, last API answers available offline (read-only), nothing else cached.
-const VERSION = 'jlibrus-v2';
+const VERSION = 'jlibrus-v3';
 const SHELL = [
   '/', '/index.html', '/css/app.css', '/manifest.webmanifest',
   '/js/app.js', '/js/api.js', '/js/dom.js', '/js/i18n.js', '/js/state.js', '/js/router.js',

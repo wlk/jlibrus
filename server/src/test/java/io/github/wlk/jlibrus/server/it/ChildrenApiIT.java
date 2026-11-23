@@ -68,6 +68,19 @@ class ChildrenApiIT {
     }
 
     @Test
+    void descriptiveGradesJustificationsAndTrips() {
+        Session.as(cookie).get(OLA + "/descriptive-grades").then().statusCode(200)
+                .body("subject", hasItem("Muzyka")).body("subject", hasItem("Język polski"));
+        Session.as(cookie).get("/api/children/7654321u/descriptive-grades").then().statusCode(200).body("$", empty());
+        Session.as(cookie).get(OLA + "/attendance").then().statusCode(200)
+                .body("justifications.status", hasItem("ACCEPTED")).body("justifications.status", hasItem("PENDING"));
+        Session.as(cookie).get(OLA + "/trips").then().statusCode(200).body("destination", hasItem("Teatr Lalek"));
+        LocalDate today = LocalDate.now();
+        Session.as(cookie).get(OLA + "/agenda?from=" + today + "&to=" + today.plusDays(60)).then().statusCode(200)
+                .body("type", hasItem("SCHOOL_TRIP"));
+    }
+
+    @Test
     void homeworkBehaviourAnnouncements() {
         Session.as(cookie).get(OLA + "/homework").then().statusCode(200).body("topic", hasItem("Karta pracy"));
         Session.as(cookie).get(OLA + "/behaviour").then().statusCode(200).body("notes", not(empty()));
@@ -99,7 +112,9 @@ class ChildrenApiIT {
         Session.as(cookie).post("/api/refresh").then().statusCode(200).body("error", hasItem((Object) null));
 
         Session.as(cookie).get(OLA + "/timeline?limit=500").then().statusCode(200)
-                .body("type", hasItem("GRADE")).body("type", hasItem("MESSAGE"));
+                .body("type", hasItem("GRADE")).body("type", hasItem("MESSAGE"))
+                .body("type", hasItem("DESCRIPTIVE_GRADE")).body("type", hasItem("JUSTIFICATION"))
+                .body("type", hasItem("SCHOOL_TRIP"));
     }
 
     @Test

@@ -9,6 +9,7 @@ import io.github.wlk.jlibrus.server.domain.TimelineEntry;
 import io.github.wlk.jlibrus.server.domain.agenda.AgendaBuilder;
 import io.github.wlk.jlibrus.server.domain.agenda.AgendaItem;
 import io.github.wlk.jlibrus.server.domain.student.Directory;
+import io.github.wlk.jlibrus.server.domain.student.StudentRecords;
 import io.github.wlk.jlibrus.server.domain.view.GradeViews;
 import io.github.wlk.jlibrus.server.domain.view.RecordViews;
 import io.github.wlk.jlibrus.server.librus.Children;
@@ -139,7 +140,16 @@ public class ChildService {
     }
 
     public RecordViews.AttendanceReport attendance(String id) {
-        return RecordViews.attendance(data.directory(id), data.records(id).attendances());
+        StudentRecords records = data.records(id);
+        return RecordViews.attendance(data.directory(id), records.attendances(), records.justifications());
+    }
+
+    public List<GradeViews.DescriptiveSubject> descriptiveGrades(String id) {
+        return GradeViews.descriptive(data.directory(id), data.records(id).descriptiveGrades());
+    }
+
+    public List<RecordViews.TripView> trips(String id) {
+        return RecordViews.trips(data.records(id).trips());
     }
 
     /** Lessons of the week containing {@code day} (today when null). */

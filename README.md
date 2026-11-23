@@ -17,11 +17,11 @@ jlibrus consists of:
 ## Features
 
 - **Several children**: one Librus Synergia account per child (`LIBRUS_ACCOUNT_1_*`, `LIBRUS_ACCOUNT_2_*`, ...), switchable in the UI.
-- **Everything Librus shows**: grades by subject with weighted averages (configurable value of "+"/"-"), semester and final grades, attendance statistics, weekly timetable with cancellations/substitutions/moved lessons, calendar ("terminarz": tests, quizzes, trips), homework, parent-teacher meetings, school days off, teacher absences, announcements (with *mark as read*), notes and behaviour points, lucky number.
+- **Everything Librus shows**: grades by subject with weighted averages (configurable value of "+"/"-"), semester and final grades, **descriptive grades** (both Librus systems, incl. the newer one for grade 1), attendance statistics, **absence justifications** with the school's decision, weekly timetable with cancellations/substitutions/moved lessons, calendar ("terminarz": tests, quizzes), **school trips**, homework, parent-teacher meetings, school days off, teacher absences, announcements (with *mark as read*), notes and behaviour points, lucky number.
 - **Messages**: inbox and sent box, reading (with attachments), replying and writing new messages to teachers, tutors and the secretary.
 - **Daily summary** on the dashboard: today's (or the next school day's) lessons, what is coming up in 7 days, and what changed recently.
 - **iCal export**: read-only `https://your-host/ical/<token>.ics` feeds for Google/Apple/Outlook calendars. Choose children and entry types per feed; **reset the token** at any time to revoke the old URL.
-- **E-mail summaries** via SMTP: any number of recipients, each with their own frequencies (daily/weekly/monthly), children and **entry types** (grades, absences, tests, homework, messages, announcements, substitutions, lessons, ...). Each summary is sent at most once per period, even across restarts.
+- **E-mail summaries** via SMTP: any number of recipients, each with their own frequencies (daily/weekly/monthly), children and **entry types** (grades, descriptive grades, absences, justification decisions, tests, trips, homework, messages, announcements, substitutions, lessons, ...). Each summary is sent at most once per period, even across restarts.
 - **PWA**: installable on phones, works offline with the last loaded data, Polish by default with an English switch.
 - **Storage**: SQLite (default, zero setup) or PostgreSQL - chosen by the JDBC URL only.
 - **Caching**: Librus data is kept in memory (reference data for hours, records for minutes); a background sync refreshes it every 15 minutes, one child after another.
@@ -117,6 +117,9 @@ List<Grade> grades = child.grades();
 Map<Long, Double> averages = GradeAverages.perSubject(grades,
         child.gradeCategories().stream().collect(toMap(GradeCategory::id, c -> c)), GradeScale.DEFAULT);
 List<TimetableEntry> week = child.timetable(LocalDate.now());
+List<DescriptiveGrade> descriptive = child.descriptiveGrades();   // both descriptive grading systems
+List<Justification> justifications = child.justifications();     // with ACCEPTED / PENDING / REJECTED
+List<SchoolTrip> trips = child.schoolTrips();
 
 MessagesClient messages = child.messages();
 MessagePage inbox = messages.list(Mailbox.INBOX, 1, 20);           // listing does not mark messages read
@@ -194,7 +197,8 @@ GitHub Actions (`.github/workflows`):
 ## Limitations
 
 - The Konto Librus (e-mail) login and kindergarten-only modules are not supported.
-- Justifications, school trips, e-library and descriptive grades for grades 1-3 are not shown yet.
+- E-library lendings, school documents, lesson topics and extra activities are not shown yet. Submitting a new justification from jlibrus is not supported (only viewing).
+- The newer descriptive grading system (grade 1) is confirmed to answer on live accounts, but no real grade has been observed in it yet; its fields are parsed defensively.
 - The protocol was reconstructed from public behaviour of Librus' web app; endpoints that could not be verified are isolated in `librus-client` and degrade to "module unavailable".
 
 ## Licence

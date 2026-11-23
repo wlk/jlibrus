@@ -59,7 +59,7 @@ class ViewsTest {
 
     @Test
     void attendanceReportCountsKindsAndListsNonPresence() {
-        RecordViews.AttendanceReport report = RecordViews.attendance(directory, records.attendances());
+        RecordViews.AttendanceReport report = RecordViews.attendance(directory, records.attendances(), records.justifications());
 
         assertThat(report.stats().lessons()).isEqualTo(3);
         assertThat(report.stats().byKind()).containsEntry(AttendanceKind.ABSENT, 1).containsEntry(AttendanceKind.LATE, 1)
@@ -68,7 +68,7 @@ class ViewsTest {
         assertThat(report.absences()).extracting(RecordViews.AttendanceView::id).containsExactly("t1", "t3");
         assertThat(report.absences().getFirst().subject()).isEqualTo("Matematyka");
         assertThat(report.absences().get(1).subject()).isEmpty();
-        assertThat(RecordViews.attendance(directory, List.of()).stats().presencePercent()).isNull();
+        assertThat(RecordViews.attendance(directory, List.of(), List.of()).stats().presencePercent()).isNull();
     }
 
     @Test
@@ -108,5 +108,45 @@ class ViewsTest {
         assertThat(Palette.hex(99)).isEqualTo("#2196F3");
         assertThat(Palette.hex(1)).isEqualTo("#F0E68C");
         assertThat(Palette.hex(31)).isEqualTo("#7CFC00");
+    }
+
+    @Test
+    void descriptiveGradesGroupedBySubjectNewestFirst() {
+        List<GradeViews.DescriptiveSubject> subjects = GradeViews.descriptive(directory, records.descriptiveGrades());
+
+        assertThat(subjects).extracting(GradeViews.DescriptiveSubject::subject).containsExactly("", "Matematyka");
+        GradeViews.DescriptiveView maths = subjects.get(1).grades().getFirst();
+        assertThat(maths.value()).isEqualTo("6");
+        assertThat(maths.skill()).isEqualTo("Liczenie");
+        assertThat(maths.teacher()).isEqualTo("Anna Nowak");
+        assertThat(maths.comments()).containsExactly("Brawo");
+        assertThat(subjects.getFirst().grades().getFirst().requirements()).containsExactly("Czyta teksty");
+    }
+
+    @Test
+    void descriptiveDateFallsBackToAddedAt() {
+        var undated = new io.github.wlk.jlibrus.client.model.DescriptiveGrade("9", 100L, "5", null, null, null,
+                TODAY.atTime(9, 0), 1, List.of(), List.of(),
+                io.github.wlk.jlibrus.client.model.DescriptiveGrade.DescriptiveSystem.CLASSIC);
+        var noDates = new io.github.wlk.jlibrus.client.model.DescriptiveGrade("8", 100L, "4", null, null, null,
+                null, 1, List.of(), List.of(), io.github.wlk.jlibrus.client.model.DescriptiveGrade.DescriptiveSystem.CLASSIC);
+
+        List<GradeViews.DescriptiveView> grades = GradeViews.descriptive(directory, List.of(noDates, undated))
+                .getFirst().grades();
+
+        assertThat(grades).extracting(GradeViews.DescriptiveView::date).containsExactly(TODAY, null);
+    }
+
+    @Test
+    void attendanceReportCarriesJustificationsAndTripsAreListed() {
+        RecordViews.AttendanceReport report = RecordViews.attendance(directory, records.attendances(), records.justifications());
+
+        assertThat(report.justifications()).singleElement().satisfies(j -> {
+            assertThat(j.status()).isEqualTo(io.github.wlk.jlibrus.client.model.JustificationStatus.ACCEPTED);
+            assertThat(j.justifiedAbsences()).isEqualTo(2);
+            assertThat(j.teachers()).containsExactly("Anna Nowak");
+        });
+        assertThat(RecordViews.trips(records.trips())).singleElement()
+                .satisfies(t -> assertThat(t.destination()).isEqualTo("Teatr Lalek"));
     }
 }

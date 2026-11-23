@@ -4,6 +4,7 @@ import { t } from '../i18n.js';
 import { childPath } from '../state.js';
 
 const KIND_CLASS = { ABSENT: 'danger', EXCUSED: 'ok', LATE: 'warn', RELEASED: '' };
+const JUSTIFICATION_CLASS = { ACCEPTED: 'ok', REJECTED: 'danger', PENDING: 'warn' };
 
 export async function render(container) {
   const report = await api.get(childPath('/attendance'));
@@ -27,5 +28,22 @@ export async function render(container) {
           h('td', { class: 'muted' }, a.lessonNo === null ? '' : String(a.lessonNo)),
           h('td', {}, a.subject),
           h('td', {}, h('span', { class: 'chip ' + (KIND_CLASS[a.kind] || '') }, a.type || t('kind_' + a.kind))),
-          h('td', { class: 'muted small' }, a.teacher))))))));
+          h('td', { class: 'muted small' }, a.teacher))))))),
+    report.justifications.length ? justificationsCard(report.justifications) : null);
+}
+
+function justificationsCard(items) {
+  return h('div', { class: 'card' },
+    h('h2', {}, t('justifications')),
+    h('ul', { class: 'list' }, items.map((j) => h('li', {},
+      h('div', { class: 'row' },
+        h('span', { class: 'chip ' + JUSTIFICATION_CLASS[j.status] }, t('just_' + j.status)),
+        h('strong', {}, j.from === j.to || !j.to ? fmtDate(j.from) : `${fmtDate(j.from)} – ${fmtDate(j.to)}`),
+        j.hasAttachment ? h('span', { class: 'chip' }, '📎') : null,
+        h('span', { class: 'spacer' }),
+        h('span', { class: 'muted small' }, `${t('sentOn')}: ${fmtDate(j.postedAt)}`)),
+      j.message ? h('div', { class: 'message-body' }, j.message) : null,
+      h('div', { class: 'muted small' },
+        [j.justifiedAbsences ? `${j.justifiedAbsences} ${t('justifiedAbsences')}` : null, j.teachers.join(', ')]
+          .filter(Boolean).join(' · '))))));
 }
