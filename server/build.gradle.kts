@@ -1,11 +1,3 @@
-buildscript {
-    dependencies {
-        // The Quarkus Gradle plugin pulls jackson 2.22.2 onto this build classpath (GHSA-p6pp-m3f8-5c89,
-        // GHSA-7hhh-6rmp-j9qf, fixed in 2.22.3); same pin as the root build. Remove once the plugin catches up.
-        classpath(platform("com.fasterxml.jackson:jackson-bom:2.22.4"))
-    }
-}
-
 plugins {
     java
     alias(libs.plugins.quarkus)
