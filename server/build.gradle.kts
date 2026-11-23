@@ -43,11 +43,23 @@ tasks.withType<JacocoReportBase>().configureEach {
     executionData.setFrom(fileTree(layout.buildDirectory) { include("jacoco/test.exec", "jacoco-quarkus.exec") })
 }
 
-// Pure domain logic is mutation-tested; Quarkus wiring (resources, producers) is covered by @QuarkusTest suites.
+// Everything testable without booting Quarkus is mutation-tested: domain rules, JDBC repositories (on SQLite),
+// account parsing and error mapping. CDI wiring and REST resources are covered by the @QuarkusTest suites.
 pitest {
-    targetClasses.set(listOf("io.github.wlk.jlibrus.server.domain.*"))
-    targetTests.set(listOf("io.github.wlk.jlibrus.server.domain.*"))
-    mutationThreshold.set(75)
+    targetClasses.set(listOf(
+            "io.github.wlk.jlibrus.server.domain.*",
+            "io.github.wlk.jlibrus.server.persistence.*",
+            "io.github.wlk.jlibrus.server.librus.AccountSettings",
+            "io.github.wlk.jlibrus.server.api.ErrorMapper*"))
+    excludedClasses.set(listOf(
+            "io.github.wlk.jlibrus.server.persistence.DatabaseProducer",
+            "io.github.wlk.jlibrus.server.persistence.DatabaseConfig"))
+    targetTests.set(listOf(
+            "io.github.wlk.jlibrus.server.domain.*",
+            "io.github.wlk.jlibrus.server.persistence.SqliteRepositoryTest",
+            "io.github.wlk.jlibrus.server.librus.*",
+            "io.github.wlk.jlibrus.server.api.ErrorMapperTest"))
+    mutationThreshold.set(88)
 }
 
 tasks.named<io.github.wlk.jlibrus.gradle.CrapCheckTask>("crapCheck") {

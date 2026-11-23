@@ -23,7 +23,7 @@ tasks.withType<JavaCompile>().configureEach {
 
 pitest {
     targetClasses.set(listOf("io.github.wlk.jlibrus.client.*"))
-    mutationThreshold.set(80)
+    mutationThreshold.set(90)
     coverageThreshold.set(85)
 }
 

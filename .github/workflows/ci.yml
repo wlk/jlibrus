@@ -118,7 +118,7 @@ jobs:
           distribution: temurin
           java-version: '25'
       - uses: gradle/actions/setup-gradle@v6
-      - run: ./gradlew :librus-client:pitest :server:pitest --console=plain
+      - run: ./gradlew :librus-client:pitest :librus-mock:pitest :server:pitest --console=plain
       - name: Upload pitest reports
         if: always()
         uses: actions/upload-artifact@v7

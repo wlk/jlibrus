@@ -38,7 +38,12 @@ public final class ScriptedServer implements AutoCloseable {
     }
 
     /** What the server saw. */
-    public record Seen(String method, String path, String query, String cookie, String body) {
+    public record Seen(String method, String path, String query, String cookie, String body,
+                       Map<String, List<String>> headers) {
+        public String header(String name) {
+            return headers.entrySet().stream().filter(e -> e.getKey().equalsIgnoreCase(name))
+                    .map(e -> e.getValue().getFirst()).findFirst().orElse(null);
+        }
     }
 
     private final HttpServer server;
@@ -91,7 +96,8 @@ public final class ScriptedServer implements AutoCloseable {
     private void handle(HttpExchange exchange) throws IOException {
         String body = new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
         Seen request = new Seen(exchange.getRequestMethod(), exchange.getRequestURI().getPath(),
-                exchange.getRequestURI().getRawQuery(), exchange.getRequestHeaders().getFirst("Cookie"), body);
+                exchange.getRequestURI().getRawQuery(), exchange.getRequestHeaders().getFirst("Cookie"), body,
+                Map.copyOf(exchange.getRequestHeaders()));
         seen.add(request);
         Reply reply = routes.getOrDefault(request.path(), s -> Reply.html(404, "nope")).apply(request);
         reply.headers().forEach((k, values) -> values.forEach(v -> exchange.getResponseHeaders().add(k, v)));

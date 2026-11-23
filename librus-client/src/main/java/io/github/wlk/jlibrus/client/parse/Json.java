@@ -120,7 +120,7 @@ public final class Json {
 
     static Optional<LocalDate> parseDate(String text) {
         try {
-            return Optional.of(LocalDate.parse(text.length() > 10 ? text.substring(0, 10) : text));
+            return Optional.of(LocalDate.parse(text.substring(0, Math.min(10, text.length()))));
         } catch (DateTimeParseException e) {
             return Optional.empty();
         }

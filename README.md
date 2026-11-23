@@ -148,8 +148,8 @@ dependencies { implementation("io.github.wlk:librus-client:<version>") }
 Requirements: JDK 21+ (CI uses 25). Docker is optional (needed only for the PostgreSQL tests and images).
 
 ```bash
-./gradlew build                       # compile, all tests, CRAP gate (fails if any method has CRAP >= 10)
-./gradlew :librus-client:pitest :server:pitest   # mutation testing (thresholds 80% / 70%)
+./gradlew build                       # compile (Error Prone), all tests, coverage >= 80%, CRAP < 10, Checkstyle, PMD, CPD, SpotBugs
+./gradlew :librus-client:pitest :librus-mock:pitest :server:pitest   # mutation testing (thresholds 90% / 80% / 88%)
 ./gradlew :server:quarkusDev          # live reload on :8080 (dev profile: login parent/parent, mails logged)
 ./gradlew :librus-mock:run            # mock Librus on :8090 (set LIBRUS_ENDPOINT_OVERRIDE=http://localhost:8090)
 ```
@@ -175,13 +175,15 @@ docs/ub-log.md     work log required by ub-mode
 
 ### Engineering rules
 
-The project follows [ub-mode](.claude/skills/ub-mode/SKILL.md): TDD, pure domain logic, CRAP < 10 for every method (enforced by `./gradlew check`), mutation testing with pitest, small ordered commits, and a work log in [`docs/ub-log.md`](docs/ub-log.md).
+The project follows [ub-mode](.claude/skills/ub-mode/SKILL.md): TDD, pure domain logic, CRAP < 10 for every method (enforced by `./gradlew check`), no duplicated blocks (CPD), mutation testing with pitest, small ordered commits, and a work log in [`docs/ub-log.md`](docs/ub-log.md). Tool configuration lives in [`config/`](config); every excluded rule or finding carries its reason.
 
 ### CI
 
 GitHub Actions (`.github/workflows`):
 
-- **ci.yml** - build + tests + CRAP gate, pitest for the library and server domain, Docker image builds and compose validation.
+- **ci.yml** - Gradle wrapper validation; tests with JaCoCo coverage >= 80% and the CRAP gate; static analysis (Error Prone, Checkstyle, PMD, CPD, SpotBugs + FindSecBugs, Javadoc lint) with findings uploaded to GitHub code scanning; pitest for all modules; Docker image builds with a Trivy scan; dependency graph submission and dependency review on pull requests.
+- **codeql.yml** - CodeQL security-and-quality analysis for Java and the PWA's JavaScript (push, PR, weekly).
+- **dependency-check.yml** - weekly OWASP Dependency-Check against the NVD (set the `NVD_API_KEY` secret), fails on CVSS >= 7.
 - **release.yml** - on `v*` tags publishes `librus-client` to GitHub Packages and pushes multi-arch images `ghcr.io/<owner>/jlibrus/server` and `.../librus-mock`.
 - Dependabot keeps Gradle, Actions and Docker base images current.
 

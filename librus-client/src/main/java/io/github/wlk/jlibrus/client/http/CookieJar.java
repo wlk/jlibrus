@@ -6,7 +6,9 @@ import java.net.CookieStore;
 import java.net.HttpCookie;
 import java.net.URI;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
@@ -25,12 +27,10 @@ final class CookieJar extends CookieHandler {
 
     @Override
     public Map<String, List<String>> get(URI uri, Map<String, List<String>> requestHeaders) {
-        String path = uri.getPath() == null || uri.getPath().isEmpty() ? "/" : uri.getPath();
-        boolean secure = "https".equalsIgnoreCase(uri.getScheme());
+        String path = Objects.toString(uri.getPath(), "");
+        // the JDK store already leaves out expired cookies and secure cookies on plain http
         String header = store.get(uri).stream()
-                .filter(c -> !c.hasExpired())
                 .filter(c -> pathMatches(path, c.getPath()))
-                .filter(c -> secure || !c.getSecure())
                 .map(c -> c.getName() + "=" + unquote(c.getValue()))
                 .distinct()
                 .collect(Collectors.joining("; "));
@@ -40,7 +40,7 @@ final class CookieJar extends CookieHandler {
     @Override
     public void put(URI uri, Map<String, List<String>> responseHeaders) {
         responseHeaders.forEach((name, values) -> {
-            if (name != null && "Set-Cookie".equalsIgnoreCase(name)) {
+            if ("Set-Cookie".equalsIgnoreCase(name)) {
                 values.forEach(value -> store(uri, value));
             }
         });
@@ -54,13 +54,17 @@ final class CookieJar extends CookieHandler {
             return;
         }
         for (HttpCookie cookie : cookies) {
+            // version 0 = Netscape/RFC 6265 matching in the JDK store (version 1 would apply RFC 2965 rules)
             cookie.setVersion(0);
             if (cookie.getPath() == null) {
                 cookie.setPath(defaultPath(uri));
             }
-            if (cookie.getDomain() != null && !HttpCookie.domainMatches(cookie.getDomain(), uri.getHost())
-                    && !cookie.getDomain().equalsIgnoreCase(uri.getHost())) {
-                continue;
+            if (cookie.getDomain() != null) {
+                String domain = normaliseDomain(cookie.getDomain());
+                if (!domainMatches(uri.getHost(), domain)) {
+                    continue;
+                }
+                cookie.setDomain("." + domain);
             }
             replace(uri, cookie);
         }
@@ -74,9 +78,19 @@ final class CookieJar extends CookieHandler {
                 .filter(old -> store.get(uri).contains(old))
                 .toList()
                 .forEach(old -> store.remove(null, old));
-        if (cookie.getMaxAge() != 0) {
-            store.add(uri, cookie);
-        }
+        store.add(uri, cookie); // the JDK store ignores cookies with Max-Age=0, which completes a deletion
+    }
+
+    /** RFC 6265 section 5.1.3: the host is the domain itself or one of its subdomains. */
+    static boolean domainMatches(String host, String domain) {
+        String h = host == null ? "" : host.toLowerCase(Locale.ROOT);
+        return !domain.isEmpty() && (h.equals(domain) || h.endsWith("." + domain));
+    }
+
+    /** A leading dot is ignored (RFC 6265 section 5.2.3). */
+    static String normaliseDomain(String domain) {
+        String lower = domain.toLowerCase(Locale.ROOT);
+        return lower.startsWith(".") ? lower.substring(1) : lower;
     }
 
     private static boolean samePath(HttpCookie a, HttpCookie b) {
@@ -101,7 +115,7 @@ final class CookieJar extends CookieHandler {
         return last <= 0 ? "/" : path.substring(0, last);
     }
 
-    private static String unquote(String value) {
+    static String unquote(String value) {
         return value.length() >= 2 && value.startsWith("\"") && value.endsWith("\"")
                 ? value.substring(1, value.length() - 1) : value;
     }

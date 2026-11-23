@@ -7,7 +7,7 @@ kill mutants), Follow Practice (append to `docs/ub-log.md`, small ordered commit
 ## Commands
 
 - `./gradlew build` - all tests + CRAP gate (`crapCheck` fails on any method with CRAP >= 10)
-- `./gradlew :librus-client:pitest :server:pitest` - mutation testing (thresholds 80 / 75)
+- `./gradlew :librus-client:pitest :librus-mock:pitest :server:pitest` - mutation testing (thresholds 90 / 80 / 88)
 - `./gradlew :server:quarkusDev` - dev server; `./gradlew :librus-mock:run` - offline Librus on :8090
 
 ## Rules specific to this repo

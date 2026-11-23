@@ -74,13 +74,7 @@ public final class HttpTransport {
 
     /** Cookie visible to requests for {@code uri} (respects domain and path), if present. */
     public Optional<HttpCookie> cookie(URI uri, String name) {
-        return cookies.store().get(uri).stream()
-                .filter(c -> c.getName().equals(name) && !c.hasExpired())
-                .findFirst();
-    }
-
-    public List<HttpCookie> allCookies() {
-        return List.copyOf(cookies.store().getCookies());
+        return cookies.store().get(uri).stream().filter(c -> c.getName().equals(name)).findFirst();
     }
 
     /** Forgets every cookie whose name is listed (used before a fresh login). */
@@ -102,8 +96,7 @@ public final class HttpTransport {
     private HttpResult send(HttpRequest request) {
         try {
             HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
-            return new HttpResult(request.uri(), response.statusCode(), response.headers(),
-                    response.body() == null ? "" : response.body());
+            return new HttpResult(request.uri(), response.statusCode(), response.headers(), response.body());
         } catch (IOException e) {
             throw new LibrusException.ServiceUnavailable(
                     "Cannot reach " + request.uri().getHost() + ": " + e.getClass().getSimpleName(), e);
