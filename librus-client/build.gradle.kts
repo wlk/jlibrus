@@ -27,7 +27,7 @@ tasks.javadoc {
 
 pitest {
     targetClasses.set(listOf("io.github.wlk.jlibrus.client.*"))
-    mutationThreshold.set(75)
+    mutationThreshold.set(80)
     coverageThreshold.set(85)
 }
 
