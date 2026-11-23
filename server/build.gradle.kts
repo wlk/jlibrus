@@ -36,18 +36,12 @@ dependencies {
     testImplementation(libs.testcontainers.junit)
 }
 
-// Security fixes ahead of the Quarkus platform, which still pins OpenTelemetry 1.62.0 (CVE-2026-118259:
-// quadratic tracestate parsing; runtime) and guava 33.6.0 (GHSA-xxph-c9ww-hj94; tests only). A rule, not a
-// constraint: it also covers Quarkus' own deployment configurations, where a second enforced BOM conflicts.
-// Remove each pin once the platform ships the fixed version.
-val openTelemetry = libs.versions.opentelemetry.get()
+// Security fix ahead of the Quarkus BOM, which still pins guava 33.7.2 while dependencies request 33.6.0
+// (GHSA-xxph-c9ww-hj94; tests only). A rule, not a constraint: it also covers Quarkus' own deployment
+// configurations, where a second enforced BOM conflicts. Remove once the BOM ships the fixed version.
 val guava = libs.versions.guavaPatched.get()
 configurations.configureEach {
     resolutionStrategy.eachDependency {
-        if (requested.group == "io.opentelemetry") {
-            useVersion(if (requested.name.endsWith("-incubator")) "$openTelemetry-alpha" else openTelemetry)
-            because("CVE-2026-118259 is fixed in OpenTelemetry $openTelemetry")
-        }
         if (requested.group == "com.google.guava" && requested.name == "guava") {
             useVersion(guava)
             because("GHSA-xxph-c9ww-hj94 is fixed in guava $guava")
