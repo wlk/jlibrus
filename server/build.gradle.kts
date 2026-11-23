@@ -34,6 +34,19 @@ dependencies {
     testImplementation(libs.testcontainers.junit)
 }
 
+// Security fix ahead of the Quarkus platform, which still pins OpenTelemetry 1.62.0 (CVE-2026-118259:
+// quadratic tracestate parsing). Applies to every configuration, including Quarkus' own deployment ones;
+// remove once the platform ships >= 1.67.0.
+val openTelemetry = libs.versions.opentelemetry.get()
+configurations.configureEach {
+    resolutionStrategy.eachDependency {
+        if (requested.group == "io.opentelemetry") {
+            useVersion(if (requested.name.endsWith("-incubator")) "$openTelemetry-alpha" else openTelemetry)
+            because("CVE-2026-118259 is fixed in OpenTelemetry $openTelemetry")
+        }
+    }
+}
+
 tasks.withType<Test>().configureEach {
     systemProperty("java.util.logging.manager", "org.jboss.logmanager.LogManager")
 }

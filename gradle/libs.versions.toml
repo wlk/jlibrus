@@ -1,5 +1,6 @@
 [versions]
 quarkus = "3.40.1"
+opentelemetry = "1.67.0"
 jackson = "2.21.7"
 junit = "6.1.3"
 assertj = "3.27.7"

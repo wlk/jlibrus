@@ -13,16 +13,23 @@ COPY server server
 RUN --mount=type=cache,target=/root/.gradle/caches \
     ./gradlew --no-daemon --console=plain :server:quarkusBuild :librus-mock:installDist -x test
 
-FROM eclipse-temurin:25-jre AS librus-mock
-RUN useradd --system --uid 10001 jlibrus
+# Runtime base: Ubuntu security updates published after the base image was built, and no pebble
+# (an unused service manager whose bundled Go runtime trails security releases).
+FROM eclipse-temurin:25-jre AS runtime
+RUN apt-get update \
+    && apt-get upgrade -y --no-install-recommends \
+    && rm -rf /var/lib/apt/lists/* /usr/bin/pebble \
+    && useradd --system --uid 10001 jlibrus
+
+FROM runtime AS librus-mock
 COPY --from=build /src/librus-mock/build/install/librus-mock /opt/librus-mock
 USER 10001
 EXPOSE 8090
 ENV MOCK_PORT=8090
 ENTRYPOINT ["/opt/librus-mock/bin/librus-mock"]
 
-FROM eclipse-temurin:25-jre AS server
-RUN useradd --system --uid 10001 jlibrus && mkdir -p /data && chown 10001 /data
+FROM runtime AS server
+RUN mkdir -p /data && chown 10001 /data
 WORKDIR /opt/jlibrus
 COPY --from=build --chown=10001 /src/server/build/quarkus-app/lib/ lib/
 COPY --from=build --chown=10001 /src/server/build/quarkus-app/app/ app/
