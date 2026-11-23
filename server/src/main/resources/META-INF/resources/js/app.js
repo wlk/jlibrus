@@ -13,7 +13,14 @@ const childSelect = document.getElementById('child-select');
 const langSelect = document.getElementById('lang-select');
 const menuToggle = document.getElementById('menu-toggle');
 
+function forgetCachedData() {
+  if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+    navigator.serviceWorker.controller.postMessage('logout');
+  }
+}
+
 function showLogin() {
+  forgetCachedData();
   topbar.hidden = true;
   nav.hidden = true;
   renderLogin(main, start);

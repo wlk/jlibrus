@@ -7,6 +7,7 @@ import io.github.wlk.jlibrus.client.messages.Recipient;
 import io.github.wlk.jlibrus.client.model.TimetableEntry;
 import io.github.wlk.jlibrus.server.domain.student.Directory;
 import io.github.wlk.jlibrus.server.domain.student.StudentRecords;
+import io.quarkus.cache.CacheInvalidate;
 import io.quarkus.cache.CacheInvalidateAll;
 import io.quarkus.cache.CacheKey;
 import io.quarkus.cache.CacheResult;
@@ -82,6 +83,11 @@ public class LibrusData {
     @CacheInvalidateAll(cacheName = TIMETABLE)
     @CacheInvalidateAll(cacheName = MESSAGES)
     public void forgetRecords() {
+        // annotations do the work
+    }
+
+    @CacheInvalidate(cacheName = DIRECTORY)
+    public void forgetDirectory(@CacheKey String childId) {
         // annotations do the work
     }
 

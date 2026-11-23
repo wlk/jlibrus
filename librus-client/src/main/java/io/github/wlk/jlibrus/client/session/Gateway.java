@@ -26,11 +26,15 @@ public final class Gateway {
 
     /** GET {@code resource} (e.g. {@code "Grades"} or {@code "Timetables?weekStart=2026-11-23"}). */
     public JsonNode get(String resource) {
-        return call(resource, () -> fetch(resource));
+        return session.exclusive(() -> call(resource, () -> fetch(resource)));
     }
 
     /** POST without body to an idempotent action such as {@code SchoolNotices/MarkAsRead/{id}}. */
     public HttpResult post(String resource) {
+        return session.exclusive(() -> postWithRenewal(resource));
+    }
+
+    private HttpResult postWithRenewal(String resource) {
         int generation = session.ensureLoggedIn();
         HttpResult result = postOnce(resource);
         if (isExpired(result)) {

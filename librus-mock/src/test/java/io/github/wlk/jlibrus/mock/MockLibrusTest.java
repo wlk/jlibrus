@@ -160,4 +160,15 @@ class MockLibrusTest {
     private static String b64(String text) {
         return Base64.getEncoder().encodeToString(text.getBytes(java.nio.charset.StandardCharsets.UTF_8));
     }
+
+    @Test
+    void outageAnswersMaintenanceEverywhere() {
+        mock.state().setOutage(true);
+
+        assertThat(browser.get("/loguj/portalRodzina").statusCode()).isEqualTo(503);
+        assertThat(browser.get("/gateway/api/2.0/Me").body()).contains("Przerwa techniczna");
+
+        mock.state().setOutage(false);
+        assertThat(browser.get("/loguj/portalRodzina").statusCode()).isEqualTo(302);
+    }
 }

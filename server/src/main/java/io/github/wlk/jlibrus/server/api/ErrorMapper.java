@@ -11,6 +11,7 @@ import org.jboss.resteasy.reactive.server.ServerExceptionMapper;
 public class ErrorMapper {
 
     private static final Logger LOG = Logger.getLogger(ErrorMapper.class);
+    static final String RETRY_AFTER_SECONDS = "300";
 
     /** Error body. */
     public record ApiError(String error, String message) {
@@ -23,7 +24,8 @@ public class ErrorMapper {
             case LibrusException.InvalidCredentials ignored -> error(502, "librus_credentials", e.getMessage());
             case LibrusException.CaptchaRequired ignored -> error(502, "librus_captcha", e.getMessage());
             case LibrusException.ModuleUnavailable ignored -> error(404, "librus_module_unavailable", e.getMessage());
-            case LibrusException.ServiceUnavailable ignored -> error(503, "librus_unavailable", e.getMessage());
+            case LibrusException.ServiceUnavailable ignored -> Response.fromResponse(
+                    error(503, "librus_unavailable", e.getMessage())).header("Retry-After", RETRY_AFTER_SECONDS).build();
             default -> error(502, "librus_error", e.getMessage());
         };
     }

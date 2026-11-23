@@ -6,7 +6,6 @@ import io.github.wlk.jlibrus.server.domain.EntryType;
 import io.github.wlk.jlibrus.server.domain.Subscription;
 import io.github.wlk.jlibrus.server.domain.summary.Frequency;
 import io.github.wlk.jlibrus.server.domain.summary.SummaryRenderer;
-import io.github.wlk.jlibrus.server.librus.LibrusData;
 import io.github.wlk.jlibrus.server.service.FeedService;
 import io.github.wlk.jlibrus.server.service.SubscriptionService;
 import io.github.wlk.jlibrus.server.service.SummaryService;
@@ -72,9 +71,6 @@ public class SettingsResource {
     @Inject
     SyncService sync;
 
-    @Inject
-    LibrusData data;
-
     @ConfigProperty(name = "summary.daily-cron", defaultValue = "0 0 18 * * ?")
     String dailyCron;
 
@@ -106,8 +102,7 @@ public class SettingsResource {
     @POST
     @Path("/refresh")
     public List<SyncService.Result> refresh() {
-        data.forgetEverything();
-        return sync.syncAll();
+        return sync.refreshEverything();
     }
 
     @GET

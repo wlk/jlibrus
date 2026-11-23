@@ -143,4 +143,28 @@ class SynergiaSessionTest {
         assertThatThrownBy(session::ensureLoggedIn).isInstanceOf(LibrusException.ServiceUnavailable.class);
         assertThat(server.count("/loguj/portalRodzina")).isEqualTo(2);
     }
+
+    @Test
+    void requestsOfOneAccountNeverOverlap() throws Exception {
+        java.util.concurrent.atomic.AtomicInteger inFlight = new java.util.concurrent.atomic.AtomicInteger();
+        java.util.concurrent.atomic.AtomicInteger maxInFlight = new java.util.concurrent.atomic.AtomicInteger();
+        SynergiaSession session = session();
+        Runnable work = () -> session.exclusive(() -> {
+            maxInFlight.accumulateAndGet(inFlight.incrementAndGet(), Math::max);
+            try {
+                Thread.sleep(20);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+            inFlight.decrementAndGet();
+            return session.exclusive(() -> "reentrant");
+        });
+        try (var executor = java.util.concurrent.Executors.newVirtualThreadPerTaskExecutor()) {
+            for (int i = 0; i < 8; i++) {
+                executor.submit(work);
+            }
+        }
+
+        assertThat(maxInFlight.get()).isEqualTo(1);
+    }
 }

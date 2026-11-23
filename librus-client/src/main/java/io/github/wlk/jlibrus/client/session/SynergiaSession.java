@@ -29,6 +29,8 @@ public final class SynergiaSession {
     private final SynergiaLogin login;
     private final Clock clock;
     private final ReentrantLock lock = new ReentrantLock();
+    /** One request (including its renewal and retry) at a time per account: Librus dislikes parallel calls. */
+    private final ReentrantLock requests = new ReentrantLock(true);
 
     private int generation;
     private boolean loggedIn;
@@ -55,6 +57,16 @@ public final class SynergiaSession {
 
     public HttpTransport http() {
         return http;
+    }
+
+    /** Runs {@code work} while no other request of this account is in flight (fair, reentrant). */
+    public <T> T exclusive(java.util.function.Supplier<T> work) {
+        requests.lock();
+        try {
+            return work.get();
+        } finally {
+            requests.unlock();
+        }
     }
 
     /** Logs in when no session exists yet; returns the current session generation. */

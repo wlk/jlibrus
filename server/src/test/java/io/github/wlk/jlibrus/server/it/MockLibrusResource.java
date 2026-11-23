@@ -9,7 +9,12 @@ import java.util.Map;
 /** Starts the offline Librus mock and points the server at it with two configured children. */
 public class MockLibrusResource implements QuarkusTestResourceLifecycleManager {
 
-    private MockLibrus mock;
+    private static volatile MockLibrus mock;
+
+    /** The running mock, so tests can simulate outages and expiry. */
+    public static MockLibrus mock() {
+        return mock;
+    }
 
     @Override
     public Map<String, String> start() {

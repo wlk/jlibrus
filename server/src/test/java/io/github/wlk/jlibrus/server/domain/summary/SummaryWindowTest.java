@@ -73,4 +73,33 @@ class SummaryWindowTest {
     void frequencyParsesCaseInsensitively() {
         assertThat(Frequency.parse(" weekly ")).isEqualTo(Frequency.WEEKLY);
     }
+
+    @Test
+    void continuesFromPreviousUntilSoNothingFallsBetweenRuns() {
+        SummaryWindow daily = SummaryWindow.of(Frequency.DAILY, NOW);
+        java.time.Instant previous = NOW.minusDays(1).plusSeconds(35).toInstant();
+
+        SummaryWindow next = daily.continuingFrom(previous, Frequency.DAILY);
+
+        assertThat(next.newSince()).isEqualTo(previous);
+        assertThat(next.newUntil()).isEqualTo(daily.newUntil());
+        assertThat(next.periodKey()).isEqualTo(daily.periodKey());
+    }
+
+    @Test
+    void catchesUpAfterMissedRunsButNotForever() {
+        SummaryWindow daily = SummaryWindow.of(Frequency.DAILY, NOW);
+
+        assertThat(daily.continuingFrom(NOW.minusDays(2).toInstant(), Frequency.DAILY).newSince())
+                .isEqualTo(NOW.minusDays(2).toInstant());
+        assertThat(daily.continuingFrom(NOW.minusDays(3).toInstant(), Frequency.DAILY).newSince())
+                .isEqualTo(NOW.minusDays(3).toInstant());
+        assertThat(daily.continuingFrom(NOW.minusDays(4).toInstant(), Frequency.DAILY)).isEqualTo(daily);
+        assertThat(daily.continuingFrom(NOW.toInstant(), Frequency.DAILY)).isEqualTo(daily);
+        assertThat(daily.continuingFrom(null, Frequency.DAILY)).isEqualTo(daily);
+        SummaryWindow monthly = SummaryWindow.of(Frequency.MONTHLY, NOW);
+        assertThat(monthly.continuingFrom(NOW.minusDays(80).toInstant(), Frequency.MONTHLY).newSince())
+                .isEqualTo(NOW.minusDays(80).toInstant());
+        assertThat(monthly.continuingFrom(NOW.minusDays(100).toInstant(), Frequency.MONTHLY)).isEqualTo(monthly);
+    }
 }

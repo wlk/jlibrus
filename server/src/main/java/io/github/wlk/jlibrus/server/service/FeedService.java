@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 /** iCalendar feeds: CRUD, token rotation and rendering for the public, token-protected URL. */
 @ApplicationScoped
@@ -36,6 +37,7 @@ public class FeedService {
     private final CalendarFeedRepository feeds;
     private final ChildService childService;
     private final AppContext context;
+    private final Map<String, String> lastGood = new ConcurrentHashMap<>();
 
     @Inject
     public FeedService(CalendarFeedRepository feeds, ChildService childService, AppContext context) {
@@ -66,6 +68,7 @@ public class FeedService {
 
     public CalendarFeed update(String id, String name, Set<String> childIds, Set<EntryType> types) {
         CalendarFeed current = get(id);
+        lastGood.remove(id);
         return feeds.save(new CalendarFeed(id, name, current.token(), childIds, calendarOnly(types), current.createdAt()));
     }
 
@@ -75,6 +78,7 @@ public class FeedService {
     }
 
     public void delete(String id) {
+        lastGood.remove(id);
         if (!feeds.delete(id)) {
             throw new NotFoundException("Unknown feed");
         }
@@ -84,12 +88,31 @@ public class FeedService {
         return feeds.findById(id).orElseThrow(() -> new NotFoundException("Unknown feed"));
     }
 
-    /** The .ics text of the feed with this token, or empty when the token is unknown. */
+    /**
+     * The .ics text of the feed with this token, or empty when the token is unknown. When Librus cannot be read
+     * the last good rendering is served; without one the call fails - calendar apps must never receive an empty
+     * calendar, which would make them delete every event.
+     */
     public Optional<String> render(String token) {
         if (!SecretTokens.looksValid(token)) {
             return Optional.empty();
         }
-        return feeds.findByToken(token).filter(f -> SecretTokens.matches(f.token(), token)).map(this::render);
+        return feeds.findByToken(token).filter(f -> SecretTokens.matches(f.token(), token)).map(this::renderOrLastGood);
+    }
+
+    private String renderOrLastGood(CalendarFeed feed) {
+        try {
+            String ics = render(feed);
+            lastGood.put(feed.id(), ics);
+            return ics;
+        } catch (LibrusException e) {
+            String previous = lastGood.get(feed.id());
+            if (previous == null) {
+                throw new LibrusException.ServiceUnavailable("Calendar temporarily unavailable: " + e.getMessage());
+            }
+            LOG.warnf("Feed %s served from last good copy: %s", feed.id(), e.getMessage());
+            return previous;
+        }
     }
 
     private String render(CalendarFeed feed) {
@@ -99,20 +122,12 @@ public class FeedService {
         List<CalendarItem> items = new ArrayList<>();
         names.forEach((childId, name) -> {
             if (feed.includesChild(childId)) {
-                agenda(childId, today).stream().filter(i -> feed.types().contains(i.type()))
+                childService.agenda(childId, today.minusDays(DAYS_BACK), today.plusDays(DAYS_AHEAD)).stream()
+                        .filter(i -> feed.types().contains(i.type()))
                         .map(i -> toCalendarItem(i, several ? name : null)).forEach(items::add);
             }
         });
         return new ICalendarWriter(context.zone(), context.clock()::instant).write(feed.name(), items);
-    }
-
-    private List<AgendaItem> agenda(String childId, LocalDate today) {
-        try {
-            return childService.agenda(childId, today.minusDays(DAYS_BACK), today.plusDays(DAYS_AHEAD));
-        } catch (LibrusException e) {
-            LOG.warnf("Feed: agenda of %s unavailable: %s", childId, e.getMessage());
-            return List.of();
-        }
     }
 
     static CalendarItem toCalendarItem(AgendaItem item, String childName) {

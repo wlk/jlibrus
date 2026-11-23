@@ -1,5 +1,5 @@
 // Service worker: app shell offline, last API answers available offline (read-only), nothing else cached.
-const VERSION = 'jlibrus-v1';
+const VERSION = 'jlibrus-v2';
 const SHELL = [
   '/', '/index.html', '/css/app.css', '/manifest.webmanifest',
   '/js/app.js', '/js/api.js', '/js/dom.js', '/js/i18n.js', '/js/state.js', '/js/router.js',
@@ -35,8 +35,26 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(networkFirst(request));
     return;
   }
-  event.respondWith(caches.match(request).then((cached) => cached || fetch(request)));
+  event.respondWith(staleWhileRevalidate(request));
 });
+
+// App shell: answer from cache at once, refresh the cached copy in the background so a deploy reaches
+// every client on its next start.
+async function staleWhileRevalidate(request) {
+  const cache = await caches.open(VERSION);
+  const cached = await cache.match(request);
+  const network = fetch(request).then((response) => {
+    if (response.ok) {
+      cache.put(request, response.clone());
+    }
+    return response;
+  });
+  if (cached) {
+    network.catch(() => undefined);
+    return cached;
+  }
+  return network;
+}
 
 async function networkFirst(request) {
   const cache = await caches.open(API_CACHE);

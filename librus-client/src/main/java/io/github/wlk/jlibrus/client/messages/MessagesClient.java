@@ -80,6 +80,10 @@ public final class MessagesClient {
      * caller should check the outbox before trying again.
      */
     public SentMessage send(OutgoingMessage message) {
+        return session.exclusive(() -> sendOnce(message));
+    }
+
+    private SentMessage sendOnce(OutgoingMessage message) {
         read("/me");
         String path = message.replyToId() == null ? "/messages" : "/messages/reply";
         HttpResult result = session.http().sendJson("POST",
@@ -114,6 +118,10 @@ public final class MessagesClient {
     }
 
     private JsonNode read(String path) {
+        return session.exclusive(() -> readWithRecovery(path));
+    }
+
+    private JsonNode readWithRecovery(String path) {
         int generation = session.ensureLoggedIn();
         opener.ensureOpen();
         HttpResult result = get(path);

@@ -1,5 +1,6 @@
 package io.github.wlk.jlibrus.server.domain.summary;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZonedDateTime;
@@ -30,6 +31,23 @@ public record SummaryWindow(Instant newSince, Instant newUntil, LocalDate upcomi
                     String.format(Locale.ROOT, "%d-%02d", today.getYear(), today.getMonthValue()));
         };
     }
+
+    /**
+     * The same window, but "new" starts where the previous run of this frequency ended, so consecutive runs
+     * neither drop nor repeat entries. Gaps longer than three periods (e.g. a long outage) are not caught up.
+     */
+    public SummaryWindow continuingFrom(Instant previousUntil, Frequency frequency) {
+        if (previousUntil == null || !previousUntil.isBefore(newUntil)) {
+            return this;
+        }
+        Duration span = Duration.between(newSince, newUntil);
+        if (previousUntil.isBefore(newUntil.minus(span.multipliedBy(MAX_CATCH_UP_PERIODS)))) {
+            return this;
+        }
+        return new SummaryWindow(previousUntil, newUntil, upcomingFrom, upcomingTo, periodKey);
+    }
+
+    static final int MAX_CATCH_UP_PERIODS = 3;
 
     public boolean isNew(Instant noticedAt) {
         return !noticedAt.isBefore(newSince) && noticedAt.isBefore(newUntil);

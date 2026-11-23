@@ -55,21 +55,33 @@ public final class MockLibrus implements AutoCloseable {
     }
 
     private static void route(HttpServer server, MockState state, String base) {
+        Route route = (path, handler) -> handle(server, path, ex -> {
+            if (state.outage()) {
+                ex.html(503, "<html><h1>Przerwa techniczna</h1></html>");
+            } else {
+                handler.accept(ex);
+            }
+        });
         AuthHandlers auth = new AuthHandlers(state, base);
         GatewayHandler gateway = new GatewayHandler(state);
         MessagesHandler messages = new MessagesHandler(state, base);
-        handle(server, "/loguj/portalRodzina", auth::portalRodzina);
-        handle(server, "/OAuth/Authorization/2FA", auth::twoFactor);
-        handle(server, "/OAuth/Authorization/Grant", auth::grant);
-        handle(server, "/OAuth/Authorization", auth::authorization);
-        handle(server, "/refreshToken", auth::refreshToken);
-        handle(server, GatewayHandler.PREFIX, gateway::handle);
-        handle(server, "/wiadomosci3", messages::bootstrap);
-        handle(server, "/MultiDomainLogon", messages::multiDomainLogon);
-        handle(server, "/messages-app", messages::app);
-        handle(server, "/api/", messages::api);
-        handle(server, "/GetFile/", ex -> ex.send(200, "application/pdf", "%PDF-1.4 demo"));
-        handle(server, "/", ex -> ex.html(404, "<html>Nie znaleziono</html>"));
+        route.add("/loguj/portalRodzina", auth::portalRodzina);
+        route.add("/OAuth/Authorization/2FA", auth::twoFactor);
+        route.add("/OAuth/Authorization/Grant", auth::grant);
+        route.add("/OAuth/Authorization", auth::authorization);
+        route.add("/refreshToken", auth::refreshToken);
+        route.add(GatewayHandler.PREFIX, gateway::handle);
+        route.add("/wiadomosci3", messages::bootstrap);
+        route.add("/MultiDomainLogon", messages::multiDomainLogon);
+        route.add("/messages-app", messages::app);
+        route.add("/api/", messages::api);
+        route.add("/GetFile/", ex -> ex.send(200, "application/pdf", "%PDF-1.4 demo"));
+        route.add("/", ex -> ex.html(404, "<html>Nie znaleziono</html>"));
+    }
+
+    @FunctionalInterface
+    private interface Route {
+        void add(String path, Consumer<MockExchange> handler);
     }
 
     private static void handle(HttpServer server, String path, Consumer<MockExchange> handler) {

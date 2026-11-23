@@ -23,7 +23,9 @@ class ErrorMapperTest {
         assertError(mapper.librus(new LibrusException.InvalidCredentials("x")), 502, "librus_credentials");
         assertError(mapper.librus(new LibrusException.CaptchaRequired("x")), 502, "librus_captcha");
         assertError(mapper.librus(new LibrusException.ModuleUnavailable("x")), 404, "librus_module_unavailable");
-        assertError(mapper.librus(new LibrusException.ServiceUnavailable("x")), 503, "librus_unavailable");
+        Response unavailable = mapper.librus(new LibrusException.ServiceUnavailable("x"));
+        assertError(unavailable, 503, "librus_unavailable");
+        assertThat(unavailable.getHeaderString("Retry-After")).isEqualTo("300");
         assertError(mapper.librus(new LibrusException.SessionExpired("x")), 502, "librus_error");
         assertError(mapper.librus(new LibrusException.ProtocolError("x")), 502, "librus_error");
     }

@@ -23,3 +23,9 @@ Chronological record of actions and the reason for each.
 | 17 | Explicit JDBC driver class in Hikari | Root cause of "No suitable driver" after Quarkus tests: `DriverManager` caches drivers per class loader |
 | 18 | Security review fixes: global login throttle, trusted proxies, hard-capped throttle map, session-epoch revocation on logout, Mailpit on loopback | Findings of automated review were valid |
 | 19 | Renamed buildSrc package `build` -> `gradle` | Root cause of Docker build failure: `build/` ignore rules hid the CRAP sources from git and Docker |
+| 20 | Independent review: 2 HIGH, 5 MEDIUM, 3 LOW findings, all accepted | Fresh read not anchored on the author's reasoning |
+| 21 | iCal serves last good calendar or 503 + Retry-After, never an empty one | Calendar apps delete every event when a feed answers empty |
+| 22 | Summaries: no claim while Librus data is incomplete; retry every 30 min, send partial after 6 tries; windows continue from the last run's end | A day's summary was silently lost on outage; runs could drop or repeat entries |
+| 23 | Sync: per-child isolation of every error, directory refetch on unknown ids (rate limited), first sync postponed until the inbox is readable | Timeline rows are write-once, so wrong names or a missing baseline were permanent |
+| 24 | Library serializes requests per account (fair lock) | A relogin could race in-flight requests; matches the "no bursts" rule |
+| 25 | Service worker: stale-while-revalidate shell, cache cleared on any 401 | Deploys never reached installed clients; revoked sessions left data readable offline |

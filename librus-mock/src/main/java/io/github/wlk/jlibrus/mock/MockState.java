@@ -31,6 +31,7 @@ public final class MockState {
     private final Map<String, Set<String>> readMessages = new ConcurrentHashMap<>();
     private final List<SentRecord> sent = new CopyOnWriteArrayList<>();
     private final AtomicInteger passwordLogins = new AtomicInteger();
+    private volatile boolean outage;
 
     /** A message accepted by the mock's send endpoint. */
     public record SentRecord(String login, long id, List<String> recipients, String topic, String text,
@@ -139,6 +140,15 @@ public final class MockState {
 
     public int passwordLogins() {
         return passwordLogins.get();
+    }
+
+    /** While on, every endpoint answers 503 "Przerwa techniczna" (maintenance). */
+    public void setOutage(boolean on) {
+        outage = on;
+    }
+
+    public boolean outage() {
+        return outage;
     }
 
     /** Simulates idle expiry of every API token (Synergia session cookies stay valid). */
