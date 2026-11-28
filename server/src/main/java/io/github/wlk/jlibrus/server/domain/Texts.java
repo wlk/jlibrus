@@ -15,7 +15,6 @@ public final class Texts {
             entry("teacherAbsent", "Nieobecność nauczyciela", "Teacher absent"),
             entry("lesson", "lekcja", "lesson"),
             entry("luckyNumber", "Szczęśliwy numerek", "Lucky number"),
-            entry("grade", "Ocena", "Grade"),
             entry("note.POSITIVE", "Pochwała", "Praise"),
             entry("note.NEGATIVE", "Uwaga negatywna", "Negative note"),
             entry("note.NEUTRAL", "Uwaga", "Note"),
