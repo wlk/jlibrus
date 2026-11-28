@@ -4,8 +4,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.wlk.jlibrus.client.LibrusException;
 import io.github.wlk.jlibrus.client.http.HttpResult;
+import io.github.wlk.jlibrus.client.parse.Json;
 
-import java.io.IOException;
 import java.util.Map;
 
 /**
@@ -89,7 +89,8 @@ public final class Gateway {
 
     private JsonNode classify(String resource, HttpResult result) {
         if (result.isSuccess()) {
-            return parse(resource, result.body());
+            return Json.parse(json, result.body(),
+                    e -> new LibrusException.ProtocolError("Malformed JSON from " + resource, e));
         }
         throw failure(resource, result.status());
     }
@@ -101,13 +102,5 @@ public final class Gateway {
             case 429, 502, 503, 504 -> new LibrusException.ServiceUnavailable("Librus is unavailable (HTTP " + status + ")");
             default -> new LibrusException.ProtocolError("Unexpected HTTP " + status + " for " + resource);
         };
-    }
-
-    private JsonNode parse(String resource, String body) {
-        try {
-            return json.readTree(body);
-        } catch (IOException e) {
-            throw new LibrusException.ProtocolError("Malformed JSON from " + resource, e);
-        }
     }
 }

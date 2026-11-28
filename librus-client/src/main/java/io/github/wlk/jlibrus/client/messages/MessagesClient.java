@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.github.wlk.jlibrus.client.Identifiers;
 import io.github.wlk.jlibrus.client.LibrusException;
 import io.github.wlk.jlibrus.client.http.HttpResult;
+import io.github.wlk.jlibrus.client.parse.Json;
 import io.github.wlk.jlibrus.client.session.SynergiaSession;
 
 import java.util.ArrayList;
@@ -96,7 +97,7 @@ public final class MessagesClient {
             throw new LibrusException.ServiceUnavailable("Librus answered HTTP " + result.status()
                     + "; the message may have been sent - check the outbox");
         }
-        JsonNode root = parse(result.body().isBlank() ? "{}" : result.body());
+        JsonNode root = parse(result.body());
         if (MessageParser.reportsFailure(root)) {
             throw new LibrusException.ProtocolError("Librus reported an error; check the outbox before retrying");
         }
@@ -159,7 +160,7 @@ public final class MessagesClient {
 
     private JsonNode classify(String path, HttpResult result) {
         if (result.isSuccess()) {
-            return parse(result.body().isBlank() ? "{}" : result.body());
+            return parse(result.body());
         }
         throw failure(path, result.status());
     }
@@ -174,12 +175,9 @@ public final class MessagesClient {
         return new LibrusException.SessionExpired("Messages module keeps rejecting the session");
     }
 
+    /** A blank answer (some successful calls return no body) parses as missing, which every parser reads as empty. */
     private JsonNode parse(String body) {
-        try {
-            return json.readTree(body);
-        } catch (java.io.IOException e) {
-            throw new LibrusException.ProtocolError("Malformed JSON from the messages module", e);
-        }
+        return Json.parse(json, body, e -> new LibrusException.ProtocolError("Malformed JSON from the messages module", e));
     }
 
     private static void requireNumeric(String id) {

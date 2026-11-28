@@ -8,8 +8,8 @@ import io.github.wlk.jlibrus.client.LibrusEndpoints;
 import io.github.wlk.jlibrus.client.LibrusException;
 import io.github.wlk.jlibrus.client.http.HttpResult;
 import io.github.wlk.jlibrus.client.http.HttpTransport;
+import io.github.wlk.jlibrus.client.parse.Json;
 
-import java.io.IOException;
 import java.net.URI;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -162,10 +162,7 @@ final class SynergiaLogin {
     }
 
     private JsonNode parse(String body) {
-        try {
-            return json.readTree(body);
-        } catch (IOException e) {
-            throw new LibrusException.ServiceUnavailable("Librus login answered with malformed JSON", e);
-        }
+        return Json.parse(json, body,
+                e -> new LibrusException.ServiceUnavailable("Librus login answered with malformed JSON", e));
     }
 }

@@ -61,17 +61,19 @@ import java.util.function.Function;
  */
 public final class LibrusAccount {
 
+    /** Never reconfigured after creation, so one thread-safe mapper serves every account. */
+    private static final ObjectMapper JSON = new ObjectMapper();
+
     private final SynergiaSession session;
     private final Gateway gateway;
     private final MessagesClient messages;
     private final DescriptiveGradesReader descriptive;
 
     private LibrusAccount(Builder builder) {
-        ObjectMapper json = new ObjectMapper();
         HttpTransport http = new HttpTransport(builder.userAgent, builder.connectTimeout, builder.requestTimeout);
-        this.session = new SynergiaSession(builder.credentials, builder.endpoints, http, json, builder.clock);
-        this.gateway = new Gateway(session, json);
-        this.messages = new MessagesClient(session, json);
+        this.session = new SynergiaSession(builder.credentials, builder.endpoints, http, JSON, builder.clock);
+        this.gateway = new Gateway(session, JSON);
+        this.messages = new MessagesClient(session, JSON);
         this.descriptive = new DescriptiveGradesReader(gateway);
     }
 

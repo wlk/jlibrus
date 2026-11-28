@@ -96,6 +96,15 @@ class LoginEdgeCasesTest {
     }
 
     @Test
+    void malformedJsonCredentialAnswerIsAnOutage() {
+        server.happyLogin().on("/OAuth/Authorization", s -> "POST".equals(s.method())
+                ? Reply.json(200, "{\"status\":") : Reply.html(200, "form"));
+
+        assertThatThrownBy(this::login).isInstanceOf(LibrusException.ServiceUnavailable.class)
+                .hasMessageContaining("malformed JSON");
+    }
+
+    @Test
     void okWithoutContinuationIsTreatedAsRejected() {
         server.happyLogin().on("/OAuth/Authorization", s -> "POST".equals(s.method())
                 ? Reply.json(200, "{\"status\":\"ok\"}") : Reply.html(200, "form"));

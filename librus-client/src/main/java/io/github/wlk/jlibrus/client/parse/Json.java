@@ -1,6 +1,8 @@
 package io.github.wlk.jlibrus.client.parse;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.wlk.jlibrus.client.LibrusException;
 
 import java.time.LocalDate;
@@ -19,6 +21,19 @@ import java.util.function.Function;
 public final class Json {
 
     private Json() {
+    }
+
+    /**
+     * Parses a Librus answer. Blank text yields a {@link com.fasterxml.jackson.databind.node.MissingNode};
+     * malformed text throws what {@code failure} makes of the parse error.
+     */
+    public static JsonNode parse(ObjectMapper mapper, String text,
+                                 Function<? super JsonProcessingException, ? extends LibrusException> failure) {
+        try {
+            return mapper.readTree(text);
+        } catch (JsonProcessingException e) {
+            throw failure.apply(e);
+        }
     }
 
     /** Items of the array under {@code rootKey}, each mapped; a missing root yields an empty list. */
