@@ -5,6 +5,7 @@ import { applyStaticLabels, lang, setLang, t } from './i18n.js';
 import { state, restoreChild, selectChild } from './state.js';
 import { ROUTES, currentRoute, renderRoute } from './router.js';
 import { renderLogin } from './views/login.js';
+import { forgetEntryTypes } from './views/common.js';
 
 const main = document.getElementById('main');
 const nav = document.getElementById('nav');
@@ -21,6 +22,7 @@ function forgetCachedData() {
 
 function showLogin() {
   forgetCachedData();
+  forgetEntryTypes();
   topbar.hidden = true;
   nav.hidden = true;
   renderLogin(main, start);

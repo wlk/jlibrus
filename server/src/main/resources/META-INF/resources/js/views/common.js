@@ -1,13 +1,31 @@
 // Small render helpers shared by several views.
+import { api } from '../api.js';
 import { fmtDate, fmtTime, h } from '../dom.js';
 import { t } from '../i18n.js';
 
 const TYPE_CLASS = { EVENT: 'warn', HOMEWORK: '', TIMETABLE_CHANGE: 'danger', FREE_DAY: 'ok', PARENT_MEETING: '' };
 
 let typeLabels = null;
+let entryTypesLoad = null;
 
-export function setTypeLabels(types) {
-  typeLabels = Object.fromEntries(types.map((x) => [x.id, x]));
+// Entry types are a fixed server enum: fetched once per session; typeLabel reads the labels they carry.
+export function entryTypes() {
+  if (!entryTypesLoad) {
+    const load = api.get('/api/entry-types').then((types) => {
+      typeLabels = Object.fromEntries(types.map((x) => [x.id, x]));
+      return Object.freeze(types);
+    });
+    load.catch(() => {
+      if (entryTypesLoad === load) entryTypesLoad = null;
+    });
+    entryTypesLoad = load;
+  }
+  return entryTypesLoad;
+}
+
+export function forgetEntryTypes() {
+  entryTypesLoad = null;
+  typeLabels = null;
 }
 
 export function typeLabel(type, lang) {

@@ -2,12 +2,13 @@ import { api } from '../api.js';
 import { empty, h, mount, toast } from '../dom.js';
 import { lang, t } from '../i18n.js';
 import { state } from '../state.js';
+import { entryTypes } from './common.js';
 
 const FREQUENCIES = ['DAILY', 'WEEKLY', 'MONTHLY'];
 
 export async function render(container) {
   const [feeds, subscriptions, types, schedule] = await Promise.all([
-    api.get('/api/feeds'), api.get('/api/subscriptions'), api.get('/api/entry-types'), api.get('/api/schedule')]);
+    api.get('/api/feeds'), api.get('/api/subscriptions'), entryTypes(), api.get('/api/schedule')]);
   const rerender = () => render(container);
   mount(container,
     h('h1', {}, t('settings')),
