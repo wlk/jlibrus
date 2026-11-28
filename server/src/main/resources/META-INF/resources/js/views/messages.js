@@ -37,7 +37,7 @@ async function renderMessage(container, mailbox, id) {
     class: 'secondary',
     on: {
       click: (e) => action(e.currentTarget, async () => {
-        const link = await api.get(childPath(`/messages/${mailbox}/${encodeURIComponent(m.id)}/attachments/${encodeURIComponent(a.id)}`));
+        const link = await api.get(childPath(`/messages/${encodeURIComponent(mailbox)}/${encodeURIComponent(m.id)}/attachments/${encodeURIComponent(a.id)}`));
         window.open(link.url, '_blank', 'noopener');
       })
     }
