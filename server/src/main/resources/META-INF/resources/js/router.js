@@ -27,16 +27,35 @@ export function currentRoute() {
   return { name, params: parts.slice(1) };
 }
 
+// Number of the newest render; an older one still waiting for the API must not show its result.
+let latest = 0;
+
+/** Makes every render in flight stale, e.g. before the login screen replaces the view. */
+export function supersedeRender() {
+  latest += 1;
+}
+
+function errorCard(error) {
+  return h('div', { class: 'card error' },
+    h('strong', {}, t('error') + ': '),
+    error.code === 'librus_module_unavailable' ? t('moduleUnavailable') : (error.message || String(error)));
+}
+
+// Each render fills its own element, shown only if no newer render started meanwhile; later re-renders of a
+// superseded view (after an action) then land in a detached element instead of over the current view.
 export async function renderRoute(container) {
+  supersedeRender();
+  const render = latest;
   const { name, params } = currentRoute();
+  const view = h('div', { class: 'view' });
   mount(container, h('p', { class: 'muted' }, t('loading')));
   try {
-    await VIEWS[name].render(container, params);
+    await VIEWS[name].render(view, params);
   } catch (error) {
-    if (error instanceof ApiError && error.status === 401) return;
-    mount(container, h('div', { class: 'card error' },
-      h('strong', {}, t('error') + ': '),
-      error.code === 'librus_module_unavailable' ? t('moduleUnavailable') : (error.message || String(error))));
+    if (render !== latest || (error instanceof ApiError && error.status === 401)) return;
+    mount(view, errorCard(error));
   }
+  if (render !== latest) return;
+  mount(container, view);
   container.focus({ preventScroll: true });
 }
