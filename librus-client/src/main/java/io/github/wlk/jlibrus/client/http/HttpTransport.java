@@ -99,9 +99,9 @@ public final class HttpTransport {
                 .build());
     }
 
-    /** Cookie visible to requests for {@code uri} (respects domain and path), if present. */
+    /** Cookie a request to {@code uri} would carry (respects domain and path), if present. */
     public Optional<HttpCookie> cookie(URI uri, String name) {
-        return cookies.store().get(uri).stream().filter(c -> c.getName().equals(name)).findFirst();
+        return cookies.visible(uri).stream().filter(c -> c.getName().equals(name)).findFirst();
     }
 
     /** Forgets every cookie whose name is listed (used before a fresh login). */
