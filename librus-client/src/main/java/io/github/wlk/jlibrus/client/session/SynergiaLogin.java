@@ -10,11 +10,13 @@ import io.github.wlk.jlibrus.client.http.HttpResult;
 import io.github.wlk.jlibrus.client.http.HttpTransport;
 import io.github.wlk.jlibrus.client.parse.Json;
 
+import java.net.HttpCookie;
 import java.net.URI;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * The Synergia password login: entry point, OAuth form, credentials POST, then a hand-walked redirect chain
@@ -93,16 +95,23 @@ final class SynergiaLogin {
     }
 
     private void verifySession() {
-        URI synergia = endpoints.synergiaPath("/");
-        if (http.cookie(synergia, "DZIENNIKSID").isEmpty()) {
+        if (http.cookie(endpoints.synergiaPath("/"), "DZIENNIKSID").isEmpty()) {
             throw new LibrusException.ProtocolError("Librus login finished without a Synergia session cookie");
         }
-        if (http.cookie(synergia, "oauth_token").isEmpty()) {
-            HttpResult refresh = http.get(endpoints.synergiaPath("/refreshToken"));
-            if (!refresh.isSuccess() || http.cookie(synergia, "oauth_token").isEmpty()) {
-                throw new LibrusException.ProtocolError("Librus login finished without an API token");
-            }
+        if (apiToken().isEmpty() && refreshApiToken().isEmpty()) {
+            throw new LibrusException.ProtocolError("Librus login finished without an API token");
         }
+    }
+
+    /** Value of the API token cookie ({@code oauth_token}) that Synergia requests carry, if any. */
+    Optional<String> apiToken() {
+        return http.cookie(endpoints.synergiaPath("/"), "oauth_token").map(HttpCookie::getValue);
+    }
+
+    /** Asks Synergia for a fresh API token; the token then held, or empty when the refresh failed. */
+    Optional<String> refreshApiToken() {
+        HttpResult refresh = http.get(endpoints.synergiaPath("/refreshToken"));
+        return refresh.isSuccess() ? apiToken() : Optional.empty();
     }
 
     /** Some accounts need TokenInfo/UserInfo touched once before other gateway resources answer. */

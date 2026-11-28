@@ -236,6 +236,17 @@ class RenewalPathsTest {
     }
 
     @Test
+    void refreshToAnEmptyTokenFallsBackToPasswordLogin() {
+        server.happyLogin("DZIENNIKSID=d; Path=/", "oauth_token=t0; Path=/")
+                .on("/refreshToken", Reply.cookies(200, "", "oauth_token=; Path=/"));
+        SynergiaSession session = session();
+
+        session.renew(session.ensureLoggedIn());
+
+        assertThat(posts()).isEqualTo(2);
+    }
+
+    @Test
     void forgettingCookiesKeepsTheOthers() {
         loginWithRefreshingTokens().on("/set", Reply.cookies(200, "", "keep=1; Path=/", "drop=2; Path=/"));
         HttpTransport http = HttpTransport.withDefaults();

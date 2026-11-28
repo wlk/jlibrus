@@ -4,10 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.wlk.jlibrus.client.Credentials;
 import io.github.wlk.jlibrus.client.LibrusEndpoints;
 import io.github.wlk.jlibrus.client.LibrusException;
-import io.github.wlk.jlibrus.client.http.HttpResult;
 import io.github.wlk.jlibrus.client.http.HttpTransport;
 
-import java.net.URI;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
@@ -117,15 +115,13 @@ public final class SynergiaSession {
         }
     }
 
+    /** Whether {@code /refreshToken} handed out a new, non-empty API token. */
     private boolean refreshToken() {
         if (!loggedIn) {
             return false;
         }
-        URI synergia = endpoints.synergiaPath("/");
-        String before = http.cookie(synergia, "oauth_token").map(c -> c.getValue()).orElse("");
-        HttpResult result = http.get(endpoints.synergiaPath("/refreshToken"));
-        String after = http.cookie(synergia, "oauth_token").map(c -> c.getValue()).orElse("");
-        return result.isSuccess() && !after.isEmpty() && !after.equals(before);
+        String before = login.apiToken().orElse("");
+        return login.refreshApiToken().filter(after -> !after.isEmpty() && !after.equals(before)).isPresent();
     }
 
     // loggedIn=false before the attempt is read by other methods when login throws; PMD sees only this method.
