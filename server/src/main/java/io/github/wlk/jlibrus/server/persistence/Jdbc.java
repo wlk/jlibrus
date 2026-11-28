@@ -29,23 +29,30 @@ public final class Jdbc {
     }
 
     public <T> List<T> query(String sql, Binder binder, RowMapper<T> mapper) {
+        return read(sql, binder, rows -> {
+            List<T> result = new ArrayList<>();
+            while (rows.next()) {
+                result.add(mapper.map(rows));
+            }
+            return List.copyOf(result);
+        });
+    }
+
+    /** The first row only; later rows are neither read nor mapped. */
+    public <T> Optional<T> queryOne(String sql, Binder binder, RowMapper<T> mapper) {
+        return read(sql, binder, rows -> rows.next() ? Optional.of(mapper.map(rows)) : Optional.empty());
+    }
+
+    private <R> R read(String sql, Binder binder, RowMapper<R> reader) {
         try (Connection connection = dataSource.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
             binder.bind(statement);
             try (ResultSet rows = statement.executeQuery()) {
-                List<T> result = new ArrayList<>();
-                while (rows.next()) {
-                    result.add(mapper.map(rows));
-                }
-                return List.copyOf(result);
+                return reader.map(rows);
             }
         } catch (SQLException e) {
             throw new PersistenceException("Query failed: " + firstLine(sql), e);
         }
-    }
-
-    public <T> Optional<T> queryOne(String sql, Binder binder, RowMapper<T> mapper) {
-        return query(sql, binder, mapper).stream().findFirst();
     }
 
     public int update(String sql, Binder binder) {

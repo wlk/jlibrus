@@ -15,6 +15,7 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -82,6 +83,19 @@ class PersistenceEdgesTest {
 
         assertThat(jdbc.query("SELECT entry_key FROM timeline_entry", s -> { }, r -> r.getString(1))).isEmpty();
         assertThat(jdbc.batch(insert, List.of(), (s, key) -> { })).isZero();
+    }
+
+    @Test
+    void queryOneMapsOnlyTheFirstRow() {
+        String insert = "INSERT INTO timeline_entry (child_id, entry_key, entry_type, title, noticed_at) VALUES ('kid', ?, 'GRADE', 't', 0)";
+        jdbc.batch(insert, List.of("a", "b", "c"), (s, key) -> s.setString(1, key));
+        AtomicInteger mapped = new AtomicInteger();
+
+        assertThat(jdbc.queryOne("SELECT entry_key FROM timeline_entry ORDER BY entry_key", s -> { }, row -> {
+            mapped.incrementAndGet();
+            return row.getString(1);
+        })).contains("a");
+        assertThat(mapped).hasValue(1);
     }
 
     @Test
