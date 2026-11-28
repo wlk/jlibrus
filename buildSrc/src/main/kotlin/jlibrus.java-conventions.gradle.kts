@@ -37,8 +37,6 @@ jacoco {
 
 tasks.withType<Test>().configureEach {
     useJUnitPlatform()
-    // Never talk to the live Librus platform from tests.
-    systemProperty("jlibrus.tests.offline", "true")
     testLogging {
         events("failed")
         exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
