@@ -1,8 +1,7 @@
 import { api } from '../api.js';
 import { empty, fmtDateTime, h, mount, toast } from '../dom.js';
 import { t } from '../i18n.js';
-import { childPath } from '../state.js';
-import { go } from '../router.js';
+import { childPath, go } from '../state.js';
 import { groupBy } from './common.js';
 
 // Routes: #/messages[/inbox|outbox[/page]] , #/messages/read/<mailbox>/<id> , #/messages/compose[/<replyToId>]

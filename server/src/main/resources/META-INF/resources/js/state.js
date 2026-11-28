@@ -1,4 +1,5 @@
-// Selected child, remembered per browser.
+// App state: the selected child (remembered per browser) and the current route (the URL hash).
+// Imports no views, so views may import it without a cycle through the router.
 const KEY = 'jlibrus.child';
 
 export const state = {
@@ -28,4 +29,9 @@ export function restoreChild() {
 
 export function childPath(suffix) {
   return `/api/children/${encodeURIComponent(state.childId)}${suffix}`;
+}
+
+// Navigates to #/<path>; the router renders on the resulting hashchange.
+export function go(path) {
+  location.hash = '#/' + path;
 }
