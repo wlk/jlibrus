@@ -34,7 +34,9 @@ import java.util.concurrent.ConcurrentHashMap;
  * Builds and mails daily/weekly/monthly summaries.
  * <ul>
  *   <li>Each (subscription, frequency, period) is claimed in the database before sending, so a repeated tick or a
- *   restart never mails twice; a failed send releases the claim.</li>
+ *   restart never mails twice; a failed send releases the claim, and the run is repeated with the same window
+ *   every {@code summary.retry-interval} until it is delivered or {@link #MAX_RETRIES} attempts are used, so the
+ *   refused subscriber gets exactly what the others got and the others are not mailed again.</li>
  *   <li>When Librus is temporarily unavailable nothing is claimed; the run is retried every
  *   {@code summary.retry-interval} and sent with whatever is available after {@link #MAX_RETRIES} attempts.</li>
  *   <li>"New" starts where the previous successful run of the same frequency ended, so entries are never
@@ -56,6 +58,13 @@ public class SummaryService {
     private final Mailer mailer;
     private final AppContext context;
     private final Map<Frequency, Integer> pendingRetries = new ConcurrentHashMap<>();
+    /** Instant of a run whose deliveries partly failed; its retries repeat that exact run. */
+    private final Map<Frequency, Instant> failedRuns = new ConcurrentHashMap<>();
+
+    private enum Delivery { SENT, NOTHING_NEW, FAILED }
+
+    private record Deliveries(int sent, int failed) {
+    }
 
     @Inject
     public SummaryService(SubscriptionRepository subscriptions, DispatchRepository dispatches, TimelineRepository timeline,
@@ -91,12 +100,14 @@ public class SummaryService {
     public void retryPending() {
         pendingRetries.keySet().forEach(frequency -> {
             int attempt = pendingRetries.merge(frequency, 1, Integer::sum);
-            sendDue(frequency, context.clock().instant(), attempt >= MAX_RETRIES);
+            Instant at = failedRuns.getOrDefault(frequency, context.clock().instant());
+            sendDue(frequency, at, attempt >= MAX_RETRIES);
         });
     }
 
     private void scheduled(Frequency frequency, Instant firedAt) {
         pendingRetries.remove(frequency);
+        failedRuns.remove(frequency);
         sendDue(frequency, firedAt, false);
     }
 
@@ -106,8 +117,9 @@ public class SummaryService {
     }
 
     /**
-     * Sends due summaries for a run at {@code at}. Unless {@code acceptPartialData}, a run with incomplete Librus
-     * data sends nothing and is queued for retry.
+     * Sends due summaries for a run at {@code at}. Unless {@code acceptPartialData} (the last attempt, or a manual
+     * run), a run with incomplete Librus data sends nothing and is queued for retry, and a run in which some
+     * deliveries failed keeps its window open and is queued for retry of the same run.
      */
     public synchronized int sendDue(Frequency frequency, Instant at, boolean acceptPartialData) {
         boolean syncDegraded = sync.syncAll().stream().anyMatch(SyncService.Result::transientFailure);
@@ -118,16 +130,33 @@ public class SummaryService {
             LOG.warnf("%s summaries postponed: Librus data incomplete, will retry", frequency);
             return 0;
         }
-        int sent = 0;
-        for (Subscription subscription : subscriptions.findWanting(frequency)) {
-            if (dispatches.claim(subscription.id(), frequency, window.periodKey(), context.clock().instant())) {
-                sent += deliver(subscription, frequency, window, data) ? 1 : 0;
-            }
+        Deliveries deliveries = deliverDue(frequency, window, data);
+        if (deliveries.failed() > 0 && !acceptPartialData) {
+            failedRuns.putIfAbsent(frequency, at);
+            pendingRetries.putIfAbsent(frequency, 0);
+            LOG.warnf("%s summaries: %d sent, %d failed for period %s; will retry", frequency, deliveries.sent(),
+                    deliveries.failed(), window.periodKey());
+            return deliveries.sent();
         }
         settings.put(untilKey(frequency), window.newUntil().toString());
         pendingRetries.remove(frequency);
-        LOG.infof("%s summaries: %d sent for period %s", frequency, sent, window.periodKey());
-        return sent;
+        failedRuns.remove(frequency);
+        LOG.infof("%s summaries: %d sent, %d failed for period %s", frequency, deliveries.sent(), deliveries.failed(),
+                window.periodKey());
+        return deliveries.sent();
+    }
+
+    private Deliveries deliverDue(Frequency frequency, SummaryWindow window, Context data) {
+        int sent = 0;
+        int failed = 0;
+        for (Subscription subscription : subscriptions.findWanting(frequency)) {
+            if (dispatches.claim(subscription.id(), frequency, window.periodKey(), context.clock().instant())) {
+                Delivery delivery = deliver(subscription, frequency, window, data);
+                sent += delivery == Delivery.SENT ? 1 : 0;
+                failed += delivery == Delivery.FAILED ? 1 : 0;
+            }
+        }
+        return new Deliveries(sent, failed);
     }
 
     /** Window for a run at {@code at} (minute precision), continuing from where the last run ended. */
@@ -141,18 +170,18 @@ public class SummaryService {
         return "summary." + frequency.name().toLowerCase(java.util.Locale.ROOT) + ".until";
     }
 
-    private boolean deliver(Subscription subscription, Frequency frequency, SummaryWindow window, Context data) {
+    private Delivery deliver(Subscription subscription, Frequency frequency, SummaryWindow window, Context data) {
         try {
             Summary summary = build(subscription, frequency, window, data);
             if (summary.isEmpty()) {
-                return false;
+                return Delivery.NOTHING_NEW;
             }
             send(subscription, summary);
-            return true;
+            return Delivery.SENT;
         } catch (RuntimeException e) {
             dispatches.release(subscription.id(), frequency, window.periodKey());
-            LOG.errorf(e, "Summary to subscription %s failed; will retry next run", subscription.id());
-            return false;
+            LOG.errorf(e, "Summary to subscription %s failed", subscription.id());
+            return Delivery.FAILED;
         }
     }
 
