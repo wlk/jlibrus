@@ -211,7 +211,7 @@ public final class LibrusAccount {
 
     /** Marks an announcement read; already-read announcements are not an error. */
     public void markAnnouncementRead(String announcementId) {
-        if (announcementId == null || !announcementId.matches("[A-Za-z0-9_-]{1,100}")) {
+        if (!Identifiers.isSafeId(announcementId)) {
             throw new IllegalArgumentException("Invalid announcement id");
         }
         HttpResult result = gateway.post("SchoolNotices/MarkAsRead/" + announcementId);

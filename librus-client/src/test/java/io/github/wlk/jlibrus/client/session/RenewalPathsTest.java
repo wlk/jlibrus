@@ -192,7 +192,7 @@ class RenewalPathsTest {
         LibrusAccount noIdentifier = LibrusAccount.builder(new Credentials("1u", "p"))
                 .endpoints(LibrusEndpoints.singleHost(server.base())).build();
         assertThat(noIdentifier.descriptiveGrades()).isEmpty();
-        assertThat(server.seen()).noneMatch(s -> s.path().contains("PartialGrades"));
+        assertThat(server.seen()).noneMatch(s -> s.path().contains("PartialGrades") || s.path().contains("UserInfo"));
 
         server.on("/gateway/api/2.0/Auth/TokenInfo", Reply.json(200, "{\"UserIdentifier\":\"LID-2\"}"))
                 .on("/gateway/api/2.0/Auth/UserInfo/LID-2", Reply.json(200, "{\"IdentifierOfStudentAssignedWithUser\":\"KID\"}"))
@@ -201,6 +201,18 @@ class RenewalPathsTest {
                 .endpoints(LibrusEndpoints.singleHost(server.base())).build();
         assertThat(disabled.descriptiveGrades()).isEmpty();
         assertThat(server.count("/gateway/api/2.0/Auth/DescriptiveGradingSystem/PartialGrades/Student/KID")).isEqualTo(1);
+    }
+
+    @Test
+    void suspiciousStudentIdentifierIsNotPutIntoAPath() {
+        loginWithRefreshingTokens()
+                .on("/gateway/api/2.0/Auth/TokenInfo", Reply.json(200, "{\"UserIdentifier\":\"LID-3\"}"))
+                .on("/gateway/api/2.0/Auth/UserInfo/LID-3", Reply.json(200, "{\"IdentifierOfStudentAssignedWithUser\":\"../kid\"}"));
+        LibrusAccount account = LibrusAccount.builder(new Credentials("3u", "p"))
+                .endpoints(LibrusEndpoints.singleHost(server.base())).build();
+
+        assertThat(account.descriptiveGrades()).isEmpty();
+        assertThat(server.seen()).noneMatch(s -> s.path().contains("PartialGrades"));
     }
 
     @Test

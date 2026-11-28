@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.github.wlk.jlibrus.client.Identifiers;
 import io.github.wlk.jlibrus.client.LibrusException;
 import io.github.wlk.jlibrus.client.http.HttpResult;
 import io.github.wlk.jlibrus.client.session.SynergiaSession;
@@ -55,7 +56,7 @@ public final class MessagesClient {
     }
 
     public List<Recipient> recipients(RecipientGroup group) {
-        if (!group.id().matches("[A-Za-z]{1,40}")) {
+        if (!Identifiers.isGroupId(group.id())) {
             throw new IllegalArgumentException("Invalid recipient group id");
         }
         return MessageParser.recipients(
@@ -182,7 +183,7 @@ public final class MessagesClient {
     }
 
     private static void requireNumeric(String id) {
-        if (id == null || !id.matches("[0-9]{1,18}")) {
+        if (!Identifiers.isNumericId(id)) {
             throw new IllegalArgumentException("Message and attachment ids are numeric");
         }
     }

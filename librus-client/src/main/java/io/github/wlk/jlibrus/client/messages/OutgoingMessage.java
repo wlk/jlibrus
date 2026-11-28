@@ -1,5 +1,7 @@
 package io.github.wlk.jlibrus.client.messages;
 
+import io.github.wlk.jlibrus.client.Identifiers;
+
 import java.util.List;
 import java.util.Objects;
 
@@ -19,12 +21,10 @@ public record OutgoingMessage(List<String> recipientIds, String topic, String te
         recipientIds = recipients(recipientIds);
         topic = bounded(topic, MAX_TOPIC_LENGTH, "Topic");
         text = bounded(text, MAX_TEXT_LENGTH, "Text");
-        if (replyToId != null && !NUMERIC.matcher(replyToId).matches()) {
+        if (replyToId != null && !Identifiers.isNumericId(replyToId)) {
             throw new IllegalArgumentException("replyToId must be numeric");
         }
     }
-
-    private static final java.util.regex.Pattern NUMERIC = java.util.regex.Pattern.compile("[0-9]{1,18}");
 
     private static List<String> recipients(List<String> raw) {
         Objects.requireNonNull(raw, "recipientIds");
@@ -32,7 +32,7 @@ public record OutgoingMessage(List<String> recipientIds, String topic, String te
         if (ids.isEmpty() || ids.size() > MAX_RECIPIENTS) {
             throw new IllegalArgumentException("A message needs 1-" + MAX_RECIPIENTS + " recipients");
         }
-        if (!ids.stream().allMatch(id -> NUMERIC.matcher(id).matches())) {
+        if (!ids.stream().allMatch(Identifiers::isNumericId)) {
             throw new IllegalArgumentException("Recipient ids must be numeric");
         }
         return ids;

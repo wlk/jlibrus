@@ -11,15 +11,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.regex.Pattern;
 
 /**
  * Reads both descriptive grading systems. The classic one needs the school-wide skill list (large), so it is
  * fetched only when there are grades; the newer one is a POST keyed by the child's identifier, looked up once.
  */
 final class DescriptiveGradesReader {
-
-    private static final Pattern IDENTIFIER = Pattern.compile("[A-Za-z0-9_-]{1,100}");
 
     private final Gateway gateway;
     private final AtomicReference<Optional<String>> studentIdentifier = new AtomicReference<>();
@@ -68,9 +65,9 @@ final class DescriptiveGradesReader {
         }
         String user = optionalNode("Auth/TokenInfo").path("UserIdentifier").asText("");
         Optional<String> found = Optional.empty();
-        if (IDENTIFIER.matcher(user).matches()) {
+        if (Identifiers.isSafeId(user)) {
             found = ExtraParser.studentIdentifier(optionalNode("Auth/UserInfo/" + user)).or(() -> Optional.of(user))
-                    .filter(id -> IDENTIFIER.matcher(id).matches());
+                    .filter(Identifiers::isSafeId);
         }
         studentIdentifier.set(found);
         return found;

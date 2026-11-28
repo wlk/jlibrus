@@ -3,6 +3,7 @@ package io.github.wlk.jlibrus.client.session;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.wlk.jlibrus.client.Credentials;
+import io.github.wlk.jlibrus.client.Identifiers;
 import io.github.wlk.jlibrus.client.LibrusEndpoints;
 import io.github.wlk.jlibrus.client.LibrusException;
 import io.github.wlk.jlibrus.client.http.HttpResult;
@@ -125,7 +126,7 @@ final class SynergiaLogin {
             return;
         }
         String user = parse(tokenInfo.body()).path("UserIdentifier").asText("");
-        if (user.matches("[A-Za-z0-9_-]{1,100}")) {
+        if (Identifiers.isSafeId(user)) {
             http.get(endpoints.gateway("Auth/UserInfo/" + user), Map.of("Accept", "application/json"));
         }
     }
