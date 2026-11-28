@@ -14,6 +14,7 @@ const childSelect = document.getElementById('child-select');
 const langSelect = document.getElementById('lang-select');
 const menuToggle = document.getElementById('menu-toggle');
 
+// Asks the service worker to drop its offline API copies; showLogin is the one path out of a session (logout, any 401).
 function forgetCachedData() {
   if (navigator.serviceWorker && navigator.serviceWorker.controller) {
     navigator.serviceWorker.controller.postMessage('logout');
