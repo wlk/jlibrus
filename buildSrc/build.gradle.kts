@@ -17,3 +17,10 @@ dependencies {
 tasks.test {
     useJUnitPlatform()
 }
+
+// Gradle builds buildSrc only up to its jar and skips its tests, and the root build cannot depend on buildSrc
+// tasks. The jar is finalized by the tests instead (test compilation needs the jar, so it cannot depend on them):
+// a broken CRAP gate fails every build, and the tests stay up to date while buildSrc is unchanged.
+tasks.jar {
+    finalizedBy(tasks.test)
+}
