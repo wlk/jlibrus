@@ -25,6 +25,7 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
@@ -105,13 +106,13 @@ public class SyncService {
 
     Result syncChild(String childId) {
         try {
-            boolean firstSync = !timeline.hasAny(childId);
+            Set<String> known = timeline.knownKeys(childId);
             Optional<List<MessageSummary>> inbox = inbox(childId);
-            if (firstSync && inbox.isEmpty()) {
+            if (NoticePolicy.isFirstSync(known) && inbox.isEmpty()) {
                 return new Result(childId, 0, "Messages unavailable; first sync postponed", true);
             }
             List<TimelineEntry> entries = collect(childId, inbox.orElse(List.of()));
-            int added = timeline.insertNew(NoticePolicy.stamp(entries, firstSync, context.clock().instant()));
+            int added = timeline.insertNew(NoticePolicy.unseen(entries, known, context.clock().instant()));
             LOG.debugf("Synced %s: %d new entries", childId, added);
             return Result.ok(childId, added);
         } catch (LibrusException e) {

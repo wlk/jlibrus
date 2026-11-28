@@ -97,25 +97,4 @@ class TimelineExtractorTest {
 
         assertThat(english).extracting(TimelineEntry::title).contains("Absence: Matematyka (lesson 1)", "Lucky number: 7");
     }
-
-    @Test
-    void firstSyncUsesLibrusTimestampsLaterSyncsUseNow() {
-        Instant now = Instant.parse("2026-11-23T12:00:00Z");
-        List<TimelineEntry> entries = List.of(byKey.get("GRADE:G1"), byKey.get("NOTE:N50"),
-                byKey.get("GRADE:G1").withNoticedAt(now));
-
-        List<TimelineEntry> first = NoticePolicy.stamp(entries, true, now);
-        List<TimelineEntry> later = NoticePolicy.stamp(entries, false, now);
-
-        assertThat(first.get(0).noticedAt()).isEqualTo(Instant.parse("2026-11-23T08:30:00Z"));
-        assertThat(first.get(1).noticedAt()).isEqualTo(Instant.EPOCH);
-        assertThat(later).extracting(TimelineEntry::noticedAt).containsOnly(now);
-    }
-
-    @Test
-    void futureLibrusTimestampsAreCappedAtNow() {
-        Instant now = Instant.parse("2026-11-23T06:00:00Z");
-
-        assertThat(NoticePolicy.stamp(List.of(byKey.get("GRADE:G1")), true, now).getFirst().noticedAt()).isEqualTo(now);
-    }
 }

@@ -9,6 +9,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Instant;
 import java.util.List;
+import java.util.Set;
 
 /** Remembers every entry ever seen so summaries can report what is new, independent of Librus caches. */
 @ApplicationScoped
@@ -24,12 +25,16 @@ public class TimelineRepository {
         this.jdbc = jdbc;
     }
 
-    public boolean hasAny(String childId) {
-        return jdbc.queryOne("SELECT 1 FROM timeline_entry WHERE child_id = ? LIMIT 1",
-                s -> s.setString(1, childId), row -> true).isPresent();
+    /** Keys of every entry recorded for the child; empty before its first sync. */
+    public Set<String> knownKeys(String childId) {
+        return Set.copyOf(jdbc.query("SELECT entry_key FROM timeline_entry WHERE child_id = ?",
+                s -> s.setString(1, childId), row -> row.getString(1)));
     }
 
-    /** Inserts entries not yet known; already-known keys keep their original noticed time. Returns new count. */
+    /**
+     * Inserts the entries and returns how many rows were added. Callers pass only unknown entries; a key that is
+     * stored already keeps its row and original noticed time.
+     */
     public int insertNew(List<TimelineEntry> entries) {
         return jdbc.batch("INSERT INTO timeline_entry (" + COLUMNS + ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) "
                 + "ON CONFLICT (child_id, entry_key) DO NOTHING", entries, (s, e) -> {

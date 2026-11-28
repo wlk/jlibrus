@@ -93,12 +93,14 @@ abstract class RepositoryContract {
     @Test
     void timelineInsertsOnlyUnknownEntriesAndKeepsFirstNoticedTime() {
         TimelineEntry grade = entry("GRADE:1", EntryType.GRADE, T0);
-        assertThat(timeline.hasAny("kid")).isFalse();
+        assertThat(timeline.knownKeys("kid")).isEmpty();
 
         assertThat(timeline.insertNew(List.of(grade, entry("NOTE:2", EntryType.NOTE, T0)))).isEqualTo(2);
         assertThat(timeline.insertNew(List.of(grade.withNoticedAt(T0.plusSeconds(3600))))).isZero();
+        timeline.insertNew(List.of(new TimelineEntry("sibling", "GRADE:3", EntryType.GRADE, "t", null, null, null,
+                null, null, T0)));
 
-        assertThat(timeline.hasAny("kid")).isTrue();
+        assertThat(timeline.knownKeys("kid")).containsExactlyInAnyOrder("GRADE:1", "NOTE:2");
         assertThat(timeline.findRecent("kid", 10)).extracting(TimelineEntry::noticedAt).containsOnly(T0);
     }
 
