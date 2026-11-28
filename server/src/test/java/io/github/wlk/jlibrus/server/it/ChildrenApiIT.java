@@ -96,6 +96,7 @@ class ChildrenApiIT {
         Session.as(cookie).get(OLA + "/messages/inbox/7003").then().statusCode(200).body("senderAccountId", equalTo("1001"));
         Session.as(cookie).get(OLA + "/messages/inbox/7003/attachments/55").then().statusCode(200)
                 .body("url", notNullValue());
+        Session.as(cookie).get(OLA + "/messages/spam/7003/attachments/55").then().statusCode(400);
         Session.as(cookie).get(OLA + "/messages/recipients").then().statusCode(200).body("accountId", hasItem("1001"));
         Session.as(cookie).contentType("application/json")
                 .body(Map.of("recipientIds", List.of("1001"), "topic", "Pytanie", "text", "Czy jutro jest sprawdzian?"))
