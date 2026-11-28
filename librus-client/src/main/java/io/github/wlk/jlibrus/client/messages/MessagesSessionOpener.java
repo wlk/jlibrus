@@ -11,15 +11,15 @@ import java.util.concurrent.locks.ReentrantLock;
 final class MessagesSessionOpener {
 
     private static final int MAX_HOPS = 10;
+    /** Page Librus shows instead of the module when the school switched messages off for this account. */
+    private static final String NO_ACCESS_MARKER = "Brak dostępu";
 
     private final SynergiaSession session;
-    private final String noAccessMarker;
     private final ReentrantLock lock = new ReentrantLock();
     private boolean open;
 
-    MessagesSessionOpener(SynergiaSession session, String noAccessMarker) {
+    MessagesSessionOpener(SynergiaSession session) {
         this.session = session;
-        this.noAccessMarker = noAccessMarker;
     }
 
     void ensureOpen() {
@@ -50,7 +50,7 @@ final class MessagesSessionOpener {
         for (int hop = 0; hop < MAX_HOPS; hop++) {
             HttpResult result = session.http().get(current);
             if (!result.isRedirect()) {
-                if (result.body().contains(noAccessMarker)) {
+                if (result.body().contains(NO_ACCESS_MARKER)) {
                     throw new LibrusException.ModuleUnavailable("The messages module is not enabled for this account");
                 }
                 return;

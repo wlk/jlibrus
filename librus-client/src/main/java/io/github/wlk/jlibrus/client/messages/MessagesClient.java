@@ -22,7 +22,6 @@ import java.util.Set;
 public final class MessagesClient {
 
     static final String API = "/api";
-    private static final String NO_ACCESS_MARKER = "Brak dostępu";
 
     private final SynergiaSession session;
     private final MessagesSessionOpener opener;
@@ -30,7 +29,7 @@ public final class MessagesClient {
 
     public MessagesClient(SynergiaSession session, ObjectMapper json) {
         this.session = session;
-        this.opener = new MessagesSessionOpener(session, NO_ACCESS_MARKER);
+        this.opener = new MessagesSessionOpener(session);
         this.json = json;
     }
 
@@ -112,7 +111,8 @@ public final class MessagesClient {
         root.putNull("storageId");
         root.put("category", "normal");
         if (message.replyToId() != null) {
-            root.put("originalMessageId", messageNumber(message.replyToId()));
+            // OutgoingMessage guarantees 1-18 digits, which always fit a long
+            root.put("originalMessageId", Long.parseLong(message.replyToId()));
         }
         return root.toString();
     }
@@ -184,15 +184,6 @@ public final class MessagesClient {
     private static void requireNumeric(String id) {
         if (id == null || !id.matches("[0-9]{1,18}")) {
             throw new IllegalArgumentException("Message and attachment ids are numeric");
-        }
-    }
-
-    /** Ids reaching here passed {@link OutgoingMessage} validation (1-18 digits); the catch guards future changes. */
-    private static long messageNumber(String id) {
-        try {
-            return Long.parseLong(id);
-        } catch (NumberFormatException e) {
-            throw new IllegalArgumentException("Message ids are numeric", e);
         }
     }
 
