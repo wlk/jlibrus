@@ -12,7 +12,7 @@ import java.util.Set;
  * @param childIds children covered; empty means all children
  */
 public record Subscription(String id, EmailAddress email, Set<Frequency> frequencies, Set<EntryType> types,
-                           Set<String> childIds, boolean enabled, Instant createdAt) {
+                           Set<String> childIds, boolean enabled, Instant createdAt) implements ChildScoped {
 
     public Subscription {
         Objects.requireNonNull(id, "id");
@@ -27,10 +27,6 @@ public record Subscription(String id, EmailAddress email, Set<Frequency> frequen
         frequencies = Set.copyOf(frequencies);
         types = Set.copyOf(types);
         childIds = Set.copyOf(childIds);
-    }
-
-    public boolean includesChild(String childId) {
-        return childIds.isEmpty() || childIds.contains(childId);
     }
 
     public boolean wants(Frequency frequency) {
