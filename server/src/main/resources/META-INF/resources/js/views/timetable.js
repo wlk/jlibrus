@@ -1,21 +1,19 @@
 import { api } from '../api.js';
-import { addDays, empty, fmtDate, fmtTime, h, isoDate, mount } from '../dom.js';
+import { empty, fmtDate, fmtTime, h, isoDate, mount } from '../dom.js';
 import { t } from '../i18n.js';
 import { childPath } from '../state.js';
-import { statusChip } from './common.js';
+import { dateParam, datePager, groupBy, statusChip } from './common.js';
+
+const WEEK_DAYS = 7;
 
 export async function render(container, params) {
-  const day = params[0] && /^\d{4}-\d{2}-\d{2}$/.test(params[0]) ? new Date(params[0] + 'T12:00:00') : new Date();
+  const day = dateParam(params[0]);
   const lessons = await api.get(childPath('/timetable?date=' + isoDate(day)));
-  const byDay = new Map();
-  lessons.forEach((l) => byDay.set(l.date, [...(byDay.get(l.date) || []), l]));
+  const byDay = groupBy(lessons, (l) => l.date);
 
   mount(container,
     h('h1', {}, t('timetable')),
-    h('div', { class: 'tabs' },
-      h('a', { class: 'button secondary', href: '#/timetable/' + isoDate(addDays(day, -7)) }, t('prevWeek')),
-      h('a', { class: 'button secondary', href: '#/timetable' }, t('thisWeek')),
-      h('a', { class: 'button secondary', href: '#/timetable/' + isoDate(addDays(day, 7)) }, t('nextWeek'))),
+    datePager('timetable', day, WEEK_DAYS, t('thisWeek')),
     byDay.size === 0 ? empty(t('nothing')) : [...byDay.entries()].map(([date, items]) => dayCard(date, items)));
 }
 

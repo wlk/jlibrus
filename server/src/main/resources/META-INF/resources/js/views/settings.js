@@ -2,7 +2,7 @@ import { api } from '../api.js';
 import { empty, h, mount, toast } from '../dom.js';
 import { lang, t } from '../i18n.js';
 import { state } from '../state.js';
-import { entryTypes } from './common.js';
+import { entryTypes, typeLabel } from './common.js';
 
 const FREQUENCIES = ['DAILY', 'WEEKLY', 'MONTHLY'];
 
@@ -37,13 +37,9 @@ async function refresh(event) {
   toast(t('refreshed'));
 }
 
-function label(type) {
-  return lang() === 'en' ? type.labelEn : type.labelPl;
-}
-
 function typeChecks(types, selected) {
   return h('div', { class: 'checks' }, types.map((x) => h('label', {},
-    h('input', { type: 'checkbox', name: 'type', value: x.id, checked: selected.includes(x.id) }), label(x))));
+    h('input', { type: 'checkbox', name: 'type', value: x.id, checked: selected.includes(x.id) }), typeLabel(x.id, lang()))));
 }
 
 function childChecks(selected) {

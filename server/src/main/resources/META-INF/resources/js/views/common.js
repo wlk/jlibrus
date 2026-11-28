@@ -1,9 +1,10 @@
 // Small render helpers shared by several views.
 import { api } from '../api.js';
-import { fmtDate, fmtTime, h } from '../dom.js';
+import { addDays, fmtDate, fmtTime, h, isoDate } from '../dom.js';
 import { t } from '../i18n.js';
 
 const TYPE_CLASS = { EVENT: 'warn', HOMEWORK: '', TIMETABLE_CHANGE: 'danger', FREE_DAY: 'ok', PARENT_MEETING: '' };
+const ISO_DAY = /^\d{4}-\d{2}-\d{2}$/;
 
 let typeLabels = null;
 let entryTypesLoad = null;
@@ -50,6 +51,28 @@ export function agendaItem(item, lang) {
       h('span', { class: 'muted small' }, when(item))),
     item.detail ? h('div', { class: 'muted small message-body' }, item.detail) : null,
     item.location ? h('div', { class: 'muted small' }, `${t('room')}: ${item.location}`) : null);
+}
+
+// A YYYY-MM-DD route parameter as that day at local noon (safe from DST shifts); now when absent or malformed.
+export function dateParam(param) {
+  return param && ISO_DAY.test(param) ? new Date(param + 'T12:00:00') : new Date();
+}
+
+// Map of key -> items with that key, keys in first-seen order, items in input order.
+export function groupBy(items, keyOf) {
+  return items.reduce((groups, item) => {
+    const key = keyOf(item);
+    return groups.set(key, [...(groups.get(key) || []), item]);
+  }, new Map());
+}
+
+// Previous / current / next links of a view paged by date: #/<route>[/<YYYY-MM-DD>].
+export function datePager(route, start, days, currentLabel) {
+  const link = (text, href) => h('a', { class: 'button secondary', href }, text);
+  return h('div', { class: 'tabs' },
+    link(t('prevWeek'), `#/${route}/${isoDate(addDays(start, -days))}`),
+    link(currentLabel, `#/${route}`),
+    link(t('nextWeek'), `#/${route}/${isoDate(addDays(start, days))}`));
 }
 
 export function statusChip(status) {

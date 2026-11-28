@@ -3,6 +3,7 @@ import { empty, fmtDateTime, h, mount, toast } from '../dom.js';
 import { t } from '../i18n.js';
 import { childPath } from '../state.js';
 import { go } from '../router.js';
+import { groupBy } from './common.js';
 
 // Routes: #/messages[/inbox|outbox[/page]] , #/messages/read/<mailbox>/<id> , #/messages/compose[/<replyToId>]
 export async function render(container, params) {
@@ -95,8 +96,6 @@ async function renderCompose(container, replyToId) {
 }
 
 function groupOptions(recipients) {
-  const groups = new Map();
-  recipients.forEach((r) => groups.set(r.groupName, [...(groups.get(r.groupName) || []), r]));
-  return [...groups.entries()].map(([name, people]) =>
+  return [...groupBy(recipients, (r) => r.groupName).entries()].map(([name, people]) =>
     h('optgroup', { label: name }, people.map((p) => h('option', { value: p.accountId }, p.name))));
 }
