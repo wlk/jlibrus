@@ -11,6 +11,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
@@ -58,7 +59,12 @@ public final class Json {
         }
         List<T> result = new ArrayList<>(array.size());
         array.forEach(item -> result.add(mapper.apply(item)));
-        return List.copyOf(result);
+        return Collections.unmodifiableList(result);
+    }
+
+    /** {@link #list} for readers that may reject an item (empty result); rejected items are left out. */
+    public static <T> List<T> listPresent(JsonNode root, String rootKey, Function<JsonNode, Optional<T>> reader) {
+        return list(root, rootKey, reader).stream().flatMap(Optional::stream).toList();
     }
 
     public static JsonNode object(JsonNode root, String rootKey) {
