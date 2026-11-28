@@ -1,7 +1,6 @@
 package io.github.wlk.jlibrus.client.http;
 
 import io.github.wlk.jlibrus.client.LibrusEndpoints;
-import io.github.wlk.jlibrus.client.ScriptedServer;
 import io.github.wlk.jlibrus.client.messages.OutgoingMessage;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -61,19 +60,6 @@ class TransportEdgesTest {
         assertThat(CookieJar.defaultPath(URI.create("mailto:a@b.pl"))).isEqualTo("/");
         assertThat(CookieJar.defaultPath(URI.create("x/y"))).isEqualTo("/");
         assertThat(jar.get(URI.create("https://b.pl/"), Collections.emptyMap())).isEmpty();
-    }
-
-    @Test
-    void cookieLookupHonoursThePathLikeRequestsDo() {
-        try (ScriptedServer server = new ScriptedServer()) {
-            server.on("/x/set", ScriptedServer.Reply.cookies(200, "", "scoped=1; Path=/x", "site=2; Path=/"));
-            HttpTransport http = HttpTransport.withDefaults();
-            http.get(server.base().resolve("/x/set"));
-
-            assertThat(http.cookie(server.base().resolve("/x/y"), "scoped")).isPresent();
-            assertThat(http.cookie(server.base().resolve("/"), "scoped")).isEmpty();
-            assertThat(http.cookie(server.base().resolve("/"), "site")).isPresent();
-        }
     }
 
     @Test

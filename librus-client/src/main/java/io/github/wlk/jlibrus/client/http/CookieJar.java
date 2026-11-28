@@ -25,16 +25,12 @@ final class CookieJar extends CookieHandler {
         return store;
     }
 
-    /** Cookies a request to {@code uri} carries: matching domain, path, secure flag and not expired. */
-    List<HttpCookie> visible(URI uri) {
-        String path = Objects.toString(uri.getPath(), "");
-        // the JDK store already leaves out expired cookies and secure cookies on plain http
-        return store.get(uri).stream().filter(c -> pathMatches(path, c.getPath())).toList();
-    }
-
     @Override
     public Map<String, List<String>> get(URI uri, Map<String, List<String>> requestHeaders) {
-        String header = visible(uri).stream()
+        String path = Objects.toString(uri.getPath(), "");
+        // the JDK store already leaves out expired cookies and secure cookies on plain http
+        String header = store.get(uri).stream()
+                .filter(c -> pathMatches(path, c.getPath()))
                 .map(c -> c.getName() + "=" + unquote(c.getValue()))
                 .distinct()
                 .collect(Collectors.joining("; "));

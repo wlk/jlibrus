@@ -99,9 +99,13 @@ public final class HttpTransport {
                 .build());
     }
 
-    /** Cookie a request to {@code uri} would carry (respects domain and path), if present. */
+    /**
+     * Cookie stored for the host of {@code uri} (domain, secure flag and expiry are respected, the path is not),
+     * if present. Request headers additionally apply the path rule; this lookup deliberately does not, so a
+     * session cookie Librus scopes to a sub-path is still found at {@code "/"}.
+     */
     public Optional<HttpCookie> cookie(URI uri, String name) {
-        return cookies.visible(uri).stream().filter(c -> c.getName().equals(name)).findFirst();
+        return cookies.store().get(uri).stream().filter(c -> c.getName().equals(name)).findFirst();
     }
 
     /** Forgets every cookie whose name is listed (used before a fresh login). */
