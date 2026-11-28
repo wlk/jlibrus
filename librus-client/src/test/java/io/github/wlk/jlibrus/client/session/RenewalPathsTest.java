@@ -67,6 +67,19 @@ class RenewalPathsTest {
     }
 
     @Test
+    void failedRefreshThenStillRejectedDoesNotLogInWithThePasswordTwice() {
+        server.happyLogin("DZIENNIKSID=d; Path=/", "oauth_token=t0; Path=/")
+                .on("/refreshToken", Reply.json(500, "{}"))
+                .on("/gateway/api/2.0/Me", Reply.json(401, "{}"));
+        Gateway gateway = new Gateway(session(), new ObjectMapper());
+
+        assertThatThrownBy(() -> gateway.get("Me")).isInstanceOf(LibrusException.SessionExpired.class);
+        // first login, then the fallback login after the failed refresh; a third login cannot help
+        assertThat(posts()).isEqualTo(2);
+        assertThat(server.count("/gateway/api/2.0/Me")).isEqualTo(2);
+    }
+
+    @Test
     void permanentRejectionIsSessionExpiredAndScopesAreModuleUnavailable() {
         loginWithRefreshingTokens()
                 .on("/gateway/api/2.0/Me", Reply.json(401, "{}"))
@@ -219,7 +232,7 @@ class RenewalPathsTest {
     void renewOrReloginBeforeAnyLoginPerformsAPasswordLogin() {
         loginWithRefreshingTokens();
 
-        assertThat(session().renew(0)).isEqualTo(1);
+        assertThat(session().renew(0).generation()).isEqualTo(1);
         assertThat(session().relogin(5)).isEqualTo(1);
         assertThat(posts()).isEqualTo(2);
         assertThat(server.count("/refreshToken")).isZero();

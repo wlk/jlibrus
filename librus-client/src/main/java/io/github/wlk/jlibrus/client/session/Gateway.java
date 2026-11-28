@@ -7,6 +7,7 @@ import io.github.wlk.jlibrus.client.http.HttpResult;
 import io.github.wlk.jlibrus.client.parse.Json;
 
 import java.util.Map;
+import java.util.function.Supplier;
 
 /**
  * Reads JSON resources from the Synergia gateway ({@code /gateway/api/2.0/...}), renewing the session when
@@ -59,21 +60,27 @@ public final class Gateway {
         return session.http().sendJson("POST", session.endpoints().gateway(resource), null);
     }
 
-    private JsonNode call(String resource, java.util.function.Supplier<HttpResult> request) {
+    private JsonNode call(String resource, Supplier<HttpResult> request) {
         int generation = session.ensureLoggedIn();
         HttpResult result = request.get();
         if (isExpired(result)) {
-            generation = session.renew(generation);
-            result = request.get();
-        }
-        if (isExpired(result)) {
-            session.relogin(generation);
-            result = request.get();
+            result = renewAndRetry(generation, request);
         }
         if (isExpired(result)) {
             throw new LibrusException.SessionExpired("Librus keeps rejecting the session for " + resource);
         }
         return classify(resource, result);
+    }
+
+    /** Renews and retries; a refreshed token that is still rejected gets one password login, never a second. */
+    private HttpResult renewAndRetry(int generation, Supplier<HttpResult> request) {
+        SynergiaSession.Renewal renewal = session.renew(generation);
+        HttpResult result = request.get();
+        if (isExpired(result) && !renewal.passwordLogin()) {
+            session.relogin(renewal.generation());
+            result = request.get();
+        }
+        return result;
     }
 
     private HttpResult fetch(String resource) {

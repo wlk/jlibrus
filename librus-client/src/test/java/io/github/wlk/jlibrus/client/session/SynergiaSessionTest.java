@@ -66,9 +66,9 @@ class SynergiaSessionTest {
 
         int first = session.ensureLoggedIn();
         assertThat(session.ensureLoggedIn()).isEqualTo(first);
-        int second = session.renew(first);
+        int second = session.renew(first).generation();
         assertThat(second).isEqualTo(first + 1);
-        assertThat(session.renew(first)).isEqualTo(second);
+        assertThat(session.renew(first)).isEqualTo(new SynergiaSession.Renewal(second, false));
         assertThat(session.relogin(first)).isEqualTo(second);
         assertThat(server.count("/refreshToken")).isEqualTo(1);
         assertThat(session.relogin(second)).isEqualTo(second + 1);
@@ -82,9 +82,9 @@ class SynergiaSessionTest {
         SynergiaSession session = session();
         int first = session.ensureLoggedIn();
 
-        int renewed = session.renew(first);
+        SynergiaSession.Renewal renewed = session.renew(first);
 
-        assertThat(renewed).isEqualTo(first + 1);
+        assertThat(renewed).isEqualTo(new SynergiaSession.Renewal(first + 1, true));
         assertThat(server.seen()).filteredOn(s -> "POST".equals(s.method())).hasSize(2);
     }
 
@@ -92,7 +92,7 @@ class SynergiaSessionTest {
     void renewBeforeAnyLoginLogsIn() {
         server.happyLogin("DZIENNIKSID=d; Path=/", token());
 
-        assertThat(session().renew(0)).isEqualTo(1);
+        assertThat(session().renew(0)).isEqualTo(new SynergiaSession.Renewal(1, true));
         assertThat(server.count("/refreshToken")).isZero();
     }
 

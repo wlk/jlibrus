@@ -81,21 +81,30 @@ public final class SynergiaSession {
     }
 
     /**
-     * Called after a request made with {@code seenGeneration} was rejected. Refreshes the token, or logs in
-     * again when refreshing fails. Returns the new generation; no-op if someone else already renewed.
+     * What {@link #renew} did.
+     *
+     * @param generation    the session generation now current
+     * @param passwordLogin whether this renewal was a full password login (so another one cannot help)
      */
-    public int renew(int seenGeneration) {
+    public record Renewal(int generation, boolean passwordLogin) {
+    }
+
+    /**
+     * Called after a request made with {@code seenGeneration} was rejected. Refreshes the token, or logs in
+     * again when refreshing fails. No-op if someone else already renewed.
+     */
+    public Renewal renew(int seenGeneration) {
         lock.lock();
         try {
             if (seenGeneration != generation && loggedIn) {
-                return generation;
+                return new Renewal(generation, false);
             }
-            if (!refreshToken()) {
-                passwordLogin();
-            } else {
+            if (refreshToken()) {
                 generation++;
+                return new Renewal(generation, false);
             }
-            return generation;
+            passwordLogin();
+            return new Renewal(generation, true);
         } finally {
             lock.unlock();
         }
