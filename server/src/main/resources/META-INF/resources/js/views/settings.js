@@ -55,6 +55,11 @@ function childChecks(selected) {
   h('span', { class: 'muted small' }, `(${t('allChildren')} = ∅)`));
 }
 
+// Names of the given children; an id that is no longer configured is shown as is.
+function childNames(ids) {
+  return ids.map((id) => state.children.find((c) => c.id === id)?.name ?? id).join(', ');
+}
+
 function checked(form, name) {
   return [...form.querySelectorAll(`input[name="${name}"]:checked`)].map((i) => i.value);
 }
@@ -64,7 +69,7 @@ function feedCard(feed, types, rerender) {
   const input = h('input', { value: url, readonly: true, 'aria-label': 'URL' });
   return h('div', { class: 'card' },
     h('div', { class: 'row' }, h('strong', {}, feed.name), h('span', { class: 'spacer' }),
-      h('span', { class: 'muted small' }, feed.childIds.length ? feed.childIds.join(', ') : t('allChildren'))),
+      h('span', { class: 'muted small' }, feed.childIds.length ? childNames(feed.childIds) : t('allChildren'))),
     h('div', { class: 'copy' }, input, h('button', {
       class: 'secondary', type: 'button',
       on: { click: (e) => action(e.currentTarget, async () => {
