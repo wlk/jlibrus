@@ -77,7 +77,7 @@ public final class ExtraParser {
     private static Optional<DescriptiveGrade> classic(JsonNode g, Map<Long, String> skills, Map<Long, String> comments) {
         return Json.longValue(g, "Id").map(id -> {
             Long skillId = Json.refLong(g, "Skill").orElse(null);
-            List<String> texts = RecordParser.refIds(g.path("Comments")).stream()
+            List<String> texts = Json.refLongs(g.path("Comments")).stream()
                     .map(comments::get).filter(c -> c != null && !c.isBlank()).toList();
             return new DescriptiveGrade(String.valueOf(id), Json.refLong(g, "Subject").orElse(null),
                     Json.text(g, "Map").or(() -> Json.text(g, "RealGradeValue")).orElse(""),

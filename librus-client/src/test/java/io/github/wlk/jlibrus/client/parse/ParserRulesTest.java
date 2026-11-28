@@ -43,7 +43,8 @@ class ParserRulesTest {
 
     @Test
     void commentReferencesAcceptObjectsAndNumbers() throws Exception {
-        assertThat(RecordParser.refIds(json("[{\"Id\":5},601,\"x\",{\"Id\":\"7\"}]"))).containsExactly(5L, 601L, 7L);
+        assertThat(Json.refLongs(json("[{\"Id\":5},601,\"x\",{\"Id\":\"7\"},null,{\"Id\":null},\" \"]")))
+                .containsExactly(5L, 601L, 7L);
     }
 
     @ParameterizedTest

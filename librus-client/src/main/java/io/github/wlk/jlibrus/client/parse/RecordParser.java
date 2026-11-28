@@ -10,7 +10,6 @@ import io.github.wlk.jlibrus.client.model.LuckyNumber;
 import io.github.wlk.jlibrus.client.model.Note;
 import io.github.wlk.jlibrus.client.model.NotePolarity;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -30,7 +29,7 @@ public final class RecordParser {
                 Json.integer(g, "Semester").orElse(1),
                 Json.dateTime(g, "AddDate").orElse(null),
                 gradeKind(g),
-                refIds(g.path("Comments")),
+                Json.refLongs(g.path("Comments")),
                 Json.refLong(g, "Improvement").orElse(null)));
     }
 
@@ -48,16 +47,6 @@ public final class RecordParser {
             return GradeKind.FINAL;
         }
         return Json.flag(g, "IsFinalProposition") ? GradeKind.FINAL_PROPOSAL : GradeKind.REGULAR;
-    }
-
-    /** Comment lists hold reference objects or, in some responses, bare numbers. */
-    static List<Long> refIds(JsonNode array) {
-        List<Long> ids = new ArrayList<>();
-        array.forEach(item -> {
-            String raw = item.isObject() ? item.path("Id").asText("") : item.asText("");
-            Json.parseLong(raw).ifPresent(ids::add);
-        });
-        return List.copyOf(ids);
     }
 
     public static List<BehaviourPoint> behaviourPoints(JsonNode root) {

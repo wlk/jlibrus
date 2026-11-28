@@ -84,15 +84,31 @@ public final class Json {
 
     /** Id of a reference object {@code {"Id": 123}} or {@code {"Id": "123"}}. */
     public static Optional<String> refId(JsonNode node, String field) {
-        JsonNode ref = node.get(field);
-        if (ref == null || ref.isNull()) {
-            return Optional.empty();
-        }
-        return ref.isObject() ? text(ref, "Id") : Optional.of(ref.asText()).filter(s -> !s.isBlank());
+        return refIdOf(node.get(field));
     }
 
     public static Optional<Long> refLong(JsonNode node, String field) {
         return refId(node, field).flatMap(Json::parseLong);
+    }
+
+    /** {@link #refLong} for small numbers such as colours. */
+    public static Optional<Integer> refInt(JsonNode node, String field) {
+        return refLong(node, field).map(Long::intValue);
+    }
+
+    /** Numeric ids of a list of references (objects or bare ids); unreadable items are left out. */
+    public static List<Long> refLongs(JsonNode array) {
+        List<Long> ids = new ArrayList<>();
+        array.forEach(item -> refIdOf(item).flatMap(Json::parseLong).ifPresent(ids::add));
+        return List.copyOf(ids);
+    }
+
+    /** A reference is an object with an {@code Id} or, in some responses, the bare id itself. */
+    private static Optional<String> refIdOf(JsonNode ref) {
+        if (ref == null || ref.isNull()) {
+            return Optional.empty();
+        }
+        return ref.isObject() ? text(ref, "Id") : Optional.of(ref.asText()).filter(s -> !s.isBlank());
     }
 
     public static long requiredLong(JsonNode node, String field) {

@@ -31,6 +31,8 @@ class JsonTest {
         assertThat(Json.refId(node, "D")).contains("7");
         assertThat(Json.refLong(node, "E")).isEmpty();
         assertThat(Json.refId(node, "E")).contains("t41");
+        assertThat(Json.refInt(node, "B")).contains(43);
+        assertThat(Json.refInt(node, "E")).isEmpty();
     }
 
     @Test
