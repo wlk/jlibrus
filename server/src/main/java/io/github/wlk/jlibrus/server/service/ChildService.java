@@ -36,7 +36,7 @@ public class ChildService {
     private static final int TIMETABLE_DAYS_BACK = 7;
     private static final int TIMETABLE_DAYS_AHEAD = 21;
 
-    /** A child as shown in the child switcher. */
+    /** A child as shown in the child switcher; class and school are null while its Librus account fails. */
     public record ChildView(String id, String name, String className, String school) {
     }
 
@@ -59,23 +59,27 @@ public class ChildService {
         this.context = context;
     }
 
+    /**
+     * Every configured child in configuration order. A child whose Librus account fails is still listed, named by
+     * its configured label or login, so one broken account never hides the others.
+     */
     public List<ChildView> list() {
-        return children.ids().stream().map(this::child).toList();
+        return children.ids().stream().map(this::childOrFallback).toList();
     }
 
-    /** Child id to display name, in configuration order; Librus failures fall back to the login. */
+    /** Child id to display name, in configuration order, with the same fallback as {@link #list()}. */
     public Map<String, String> names() {
         Map<String, String> names = new LinkedHashMap<>();
-        children.ids().forEach(id -> names.put(id, safeName(id)));
+        list().forEach(child -> names.put(child.id(), child.name()));
         return names;
     }
 
-    private String safeName(String id) {
+    private ChildView childOrFallback(String id) {
         try {
-            return child(id).name();
+            return child(id);
         } catch (LibrusException e) {
-            LOG.warnf("Cannot read name of %s: %s", id, e.getMessage());
-            return children.label(id).orElse(id);
+            LOG.warnf("Cannot read details of %s: %s", id, e.getMessage());
+            return new ChildView(id, children.label(id).orElse(id), null, null);
         }
     }
 
