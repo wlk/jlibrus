@@ -9,7 +9,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Instant;
 import java.util.List;
-import java.util.Set;
 
 /** Remembers every entry ever seen so summaries can report what is new, independent of Librus caches. */
 @ApplicationScoped
@@ -47,16 +46,13 @@ public class TimelineRepository {
         });
     }
 
-    /** Entries noticed in {@code [from, to)} for the given children (empty = all) and types. */
-    public List<TimelineEntry> findNoticed(Set<String> childIds, Set<EntryType> types, Instant from, Instant to) {
+    /** Entries of every child and type noticed in {@code [from, to)}, newest first. */
+    public List<TimelineEntry> findNoticed(Instant from, Instant to) {
         return jdbc.query("SELECT " + COLUMNS + " FROM timeline_entry WHERE noticed_at >= ? AND noticed_at < ? "
-                        + "ORDER BY noticed_at DESC, entry_key", s -> {
-                    Columns.setInstant(s, 1, from);
-                    Columns.setInstant(s, 2, to);
-                }, this::map).stream()
-                .filter(e -> childIds.isEmpty() || childIds.contains(e.childId()))
-                .filter(e -> types.contains(e.type()))
-                .toList();
+                + "ORDER BY noticed_at DESC, entry_key", s -> {
+            Columns.setInstant(s, 1, from);
+            Columns.setInstant(s, 2, to);
+        }, this::map);
     }
 
     public List<TimelineEntry> findRecent(String childId, int limit) {

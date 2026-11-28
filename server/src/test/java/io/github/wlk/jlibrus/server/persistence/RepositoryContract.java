@@ -103,17 +103,17 @@ abstract class RepositoryContract {
     }
 
     @Test
-    void timelineFindsNoticedEntriesInHalfOpenRangeByTypeAndChild() {
+    void timelineFindsNoticedEntriesInHalfOpenRangeNewestFirst() {
         timeline.insertNew(List.of(
+                entry("GRADE:0", EntryType.GRADE, T0.minusMillis(1)),
                 entry("GRADE:1", EntryType.GRADE, T0),
                 entry("GRADE:2", EntryType.GRADE, T0.plusSeconds(60)),
                 entry("NOTE:3", EntryType.NOTE, T0.plusSeconds(30)),
                 entry("GRADE:4", EntryType.GRADE, T0.plusSeconds(120))));
 
-        List<TimelineEntry> found = timeline.findNoticed(Set.of(), Set.of(EntryType.GRADE), T0, T0.plusSeconds(120));
+        List<TimelineEntry> found = timeline.findNoticed(T0, T0.plusSeconds(120));
 
-        assertThat(found).extracting(TimelineEntry::key).containsExactly("GRADE:2", "GRADE:1");
-        assertThat(timeline.findNoticed(Set.of("other"), Set.of(EntryType.GRADE), T0, T0.plusSeconds(500))).isEmpty();
+        assertThat(found).extracting(TimelineEntry::key).containsExactly("GRADE:2", "NOTE:3", "GRADE:1");
     }
 
     @Test
