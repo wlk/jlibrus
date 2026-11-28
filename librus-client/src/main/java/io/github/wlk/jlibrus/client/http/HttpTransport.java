@@ -15,6 +15,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 /**
@@ -26,6 +27,9 @@ public final class HttpTransport {
     /** A current desktop browser; Librus serves marketing pages to clients it does not recognise. */
     public static final String DEFAULT_USER_AGENT =
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:140.0) Gecko/20100101 Firefox/140.0";
+
+    /** Requests a hand-walked redirect chain may take before it counts as a loop. */
+    public static final int MAX_REDIRECTS = 10;
 
     private final HttpClient client;
     private final CookieJar cookies;
@@ -55,6 +59,29 @@ public final class HttpTransport {
         return get(uri, Map.of());
     }
 
+    /**
+     * GETs {@code start} (already trusted by the caller) and follows redirects by hand, only to targets
+     * {@code allowed} accepts and for at most {@link #MAX_REDIRECTS} requests.
+     *
+     * @param flow names the walk in error messages, e.g. {@code "Librus login"}
+     * @return the first answer that is not a redirect
+     * @throws LibrusException.ProtocolError on a redirect to a target not allowed, or a chain that is too long
+     */
+    public HttpResult followRedirects(URI start, Predicate<URI> allowed, String flow) {
+        URI current = start;
+        for (int hop = 0; hop < MAX_REDIRECTS; hop++) {
+            HttpResult result = get(current);
+            if (!result.isRedirect()) {
+                return result;
+            }
+            current = result.location().orElseThrow();
+            if (!allowed.test(current)) {
+                throw new LibrusException.ProtocolError(flow + " redirected to an unexpected host: " + current.getHost());
+            }
+        }
+        throw new LibrusException.ProtocolError(flow + " redirected more than " + MAX_REDIRECTS + " times");
+    }
+
     public HttpResult postForm(URI uri, Map<String, String> form, Map<String, String> headers) {
         String body = form.entrySet().stream()
                 .map(e -> encode(e.getKey()) + "=" + encode(e.getValue()))
@@ -72,7 +99,11 @@ public final class HttpTransport {
                 .build());
     }
 
-    /** Cookie visible to requests for {@code uri} (respects domain and path), if present. */
+    /**
+     * Cookie stored for the host of {@code uri} (domain, secure flag and expiry are respected, the path is not),
+     * if present. Request headers additionally apply the path rule; this lookup deliberately does not, so a
+     * session cookie Librus scopes to a sub-path is still found at {@code "/"}.
+     */
     public Optional<HttpCookie> cookie(URI uri, String name) {
         return cookies.store().get(uri).stream().filter(c -> c.getName().equals(name)).findFirst();
     }

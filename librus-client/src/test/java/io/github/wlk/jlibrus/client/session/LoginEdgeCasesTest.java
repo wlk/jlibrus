@@ -55,6 +55,16 @@ class LoginEdgeCasesTest {
     }
 
     @Test
+    void overlongUserIdentifierIsNotPutIntoAPath() {
+        server.happyLogin(SESSION, TOKEN)
+                .on("/gateway/api/2.0/Auth/TokenInfo", Reply.json(200, "{\"UserIdentifier\":\"" + "L".repeat(101) + "\"}"));
+
+        login();
+
+        assertThat(server.seen()).noneMatch(s -> s.path().contains("UserInfo"));
+    }
+
+    @Test
     void nonJsonTokenInfoSkipsActivation() {
         server.happyLogin(SESSION, TOKEN).on("/gateway/api/2.0/Auth/TokenInfo", Reply.html(200, "<html>"));
 
@@ -86,6 +96,15 @@ class LoginEdgeCasesTest {
     }
 
     @Test
+    void malformedJsonCredentialAnswerIsAnOutage() {
+        server.happyLogin().on("/OAuth/Authorization", s -> "POST".equals(s.method())
+                ? Reply.json(200, "{\"status\":") : Reply.html(200, "form"));
+
+        assertThatThrownBy(this::login).isInstanceOf(LibrusException.ServiceUnavailable.class)
+                .hasMessageContaining("malformed JSON");
+    }
+
+    @Test
     void okWithoutContinuationIsTreatedAsRejected() {
         server.happyLogin().on("/OAuth/Authorization", s -> "POST".equals(s.method())
                 ? Reply.json(200, "{\"status\":\"ok\"}") : Reply.html(200, "form"));
@@ -112,7 +131,14 @@ class LoginEdgeCasesTest {
         server.happyLogin().on("/OAuth/Authorization/2FA", Reply.redirect(b + "/OAuth/Authorization/2FA"));
 
         assertThatThrownBy(this::login).isInstanceOf(LibrusException.ProtocolError.class).hasMessageContaining("10");
-        assertThat(server.count("/OAuth/Authorization/2FA")).isEqualTo(SynergiaLogin.MAX_HOPS);
+        assertThat(server.count("/OAuth/Authorization/2FA")).isEqualTo(HttpTransport.MAX_REDIRECTS);
+    }
+
+    @Test
+    void chainRedirectToForeignHostIsRefused() {
+        server.happyLogin().on("/OAuth/Authorization/2FA", Reply.redirect("https://evil.example/steal"));
+
+        assertThatThrownBy(this::login).isInstanceOf(LibrusException.ProtocolError.class).hasMessageContaining("evil.example");
     }
 
     @Test

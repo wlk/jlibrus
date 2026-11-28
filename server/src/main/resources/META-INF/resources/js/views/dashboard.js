@@ -2,11 +2,10 @@ import { api } from '../api.js';
 import { empty, fmtDate, fmtDateTime, fmtTime, h, mount } from '../dom.js';
 import { lang, t } from '../i18n.js';
 import { childPath } from '../state.js';
-import { agendaItem, setTypeLabels, statusChip, typeLabel } from './common.js';
+import { agendaItem, entryTypes, statusChip, typeLabel } from './common.js';
 
 export async function render(container) {
-  const [data, types] = await Promise.all([api.get(childPath('/dashboard')), api.get('/api/entry-types')]);
-  setTypeLabels(types);
+  const [data] = await Promise.all([api.get(childPath('/dashboard')), entryTypes()]);
   const lessonsTitle = data.lessonsDay === data.today ? t('today') : fmtDate(data.lessonsDay, { weekday: 'long', day: 'numeric', month: 'long' });
 
   mount(container,

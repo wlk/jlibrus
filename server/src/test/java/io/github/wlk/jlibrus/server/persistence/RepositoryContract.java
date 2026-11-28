@@ -93,27 +93,29 @@ abstract class RepositoryContract {
     @Test
     void timelineInsertsOnlyUnknownEntriesAndKeepsFirstNoticedTime() {
         TimelineEntry grade = entry("GRADE:1", EntryType.GRADE, T0);
-        assertThat(timeline.hasAny("kid")).isFalse();
+        assertThat(timeline.knownKeys("kid")).isEmpty();
 
         assertThat(timeline.insertNew(List.of(grade, entry("NOTE:2", EntryType.NOTE, T0)))).isEqualTo(2);
         assertThat(timeline.insertNew(List.of(grade.withNoticedAt(T0.plusSeconds(3600))))).isZero();
+        timeline.insertNew(List.of(new TimelineEntry("sibling", "GRADE:3", EntryType.GRADE, "t", null, null, null,
+                null, null, T0)));
 
-        assertThat(timeline.hasAny("kid")).isTrue();
+        assertThat(timeline.knownKeys("kid")).containsExactlyInAnyOrder("GRADE:1", "NOTE:2");
         assertThat(timeline.findRecent("kid", 10)).extracting(TimelineEntry::noticedAt).containsOnly(T0);
     }
 
     @Test
-    void timelineFindsNoticedEntriesInHalfOpenRangeByTypeAndChild() {
+    void timelineFindsNoticedEntriesInHalfOpenRangeNewestFirst() {
         timeline.insertNew(List.of(
+                entry("GRADE:0", EntryType.GRADE, T0.minusMillis(1)),
                 entry("GRADE:1", EntryType.GRADE, T0),
                 entry("GRADE:2", EntryType.GRADE, T0.plusSeconds(60)),
                 entry("NOTE:3", EntryType.NOTE, T0.plusSeconds(30)),
                 entry("GRADE:4", EntryType.GRADE, T0.plusSeconds(120))));
 
-        List<TimelineEntry> found = timeline.findNoticed(Set.of(), Set.of(EntryType.GRADE), T0, T0.plusSeconds(120));
+        List<TimelineEntry> found = timeline.findNoticed(T0, T0.plusSeconds(120));
 
-        assertThat(found).extracting(TimelineEntry::key).containsExactly("GRADE:2", "GRADE:1");
-        assertThat(timeline.findNoticed(Set.of("other"), Set.of(EntryType.GRADE), T0, T0.plusSeconds(500))).isEmpty();
+        assertThat(found).extracting(TimelineEntry::key).containsExactly("GRADE:2", "NOTE:3", "GRADE:1");
     }
 
     @Test

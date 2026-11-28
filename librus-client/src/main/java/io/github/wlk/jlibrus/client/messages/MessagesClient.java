@@ -4,11 +4,12 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.github.wlk.jlibrus.client.Identifiers;
 import io.github.wlk.jlibrus.client.LibrusException;
 import io.github.wlk.jlibrus.client.http.HttpResult;
+import io.github.wlk.jlibrus.client.parse.Json;
 import io.github.wlk.jlibrus.client.session.SynergiaSession;
 
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -22,7 +23,6 @@ import java.util.Set;
 public final class MessagesClient {
 
     static final String API = "/api";
-    private static final String NO_ACCESS_MARKER = "Brak dostępu";
 
     private final SynergiaSession session;
     private final MessagesSessionOpener opener;
@@ -30,7 +30,7 @@ public final class MessagesClient {
 
     public MessagesClient(SynergiaSession session, ObjectMapper json) {
         this.session = session;
-        this.opener = new MessagesSessionOpener(session, NO_ACCESS_MARKER);
+        this.opener = new MessagesSessionOpener(session);
         this.json = json;
     }
 
@@ -56,11 +56,24 @@ public final class MessagesClient {
     }
 
     public List<Recipient> recipients(RecipientGroup group) {
-        if (!group.id().matches("[A-Za-z]{1,40}")) {
+        return MessageParser.recipients(read(recipientsPath(group)), group);
+    }
+
+    /** Lists every recipient of every offered staff group, each person once; groups this account may not read are skipped. */
+    public List<Recipient> allRecipients() {
+        Set<String> seen = new HashSet<>();
+        return recipientGroups().stream()
+                .filter(group -> !RecipientGroups.SKIPPED.contains(group.id()))
+                .flatMap(group -> MessageParser.recipients(Json.orMissing(() -> read(recipientsPath(group))), group).stream())
+                .filter(recipient -> seen.add(recipient.accountId()))
+                .toList();
+    }
+
+    private static String recipientsPath(RecipientGroup group) {
+        if (!Identifiers.isGroupId(group.id())) {
             throw new IllegalArgumentException("Invalid recipient group id");
         }
-        return MessageParser.recipients(
-                read("/receivers/groups/school-employees?receiverType=" + group.id()), group);
+        return "/receivers/groups/school-employees?receiverType=" + group.id();
     }
 
     /** Download link of an attachment (does not mark the message read). */
@@ -96,7 +109,7 @@ public final class MessagesClient {
             throw new LibrusException.ServiceUnavailable("Librus answered HTTP " + result.status()
                     + "; the message may have been sent - check the outbox");
         }
-        JsonNode root = parse(result.body().isBlank() ? "{}" : result.body());
+        JsonNode root = parse(result.body());
         if (MessageParser.reportsFailure(root)) {
             throw new LibrusException.ProtocolError("Librus reported an error; check the outbox before retrying");
         }
@@ -112,7 +125,8 @@ public final class MessagesClient {
         root.putNull("storageId");
         root.put("category", "normal");
         if (message.replyToId() != null) {
-            root.put("originalMessageId", messageNumber(message.replyToId()));
+            // OutgoingMessage guarantees 1-18 digits, which always fit a long
+            root.put("originalMessageId", Long.parseLong(message.replyToId()));
         }
         return root.toString();
     }
@@ -158,7 +172,7 @@ public final class MessagesClient {
 
     private JsonNode classify(String path, HttpResult result) {
         if (result.isSuccess()) {
-            return parse(result.body().isBlank() ? "{}" : result.body());
+            return parse(result.body());
         }
         throw failure(path, result.status());
     }
@@ -173,43 +187,14 @@ public final class MessagesClient {
         return new LibrusException.SessionExpired("Messages module keeps rejecting the session");
     }
 
+    /** A blank answer (some successful calls return no body) parses as missing, which every parser reads as empty. */
     private JsonNode parse(String body) {
-        try {
-            return json.readTree(body);
-        } catch (java.io.IOException e) {
-            throw new LibrusException.ProtocolError("Malformed JSON from the messages module", e);
-        }
+        return Json.parse(json, body, e -> new LibrusException.ProtocolError("Malformed JSON from the messages module", e));
     }
 
     private static void requireNumeric(String id) {
-        if (id == null || !id.matches("[0-9]{1,18}")) {
+        if (!Identifiers.isNumericId(id)) {
             throw new IllegalArgumentException("Message and attachment ids are numeric");
         }
-    }
-
-    /** Ids reaching here passed {@link OutgoingMessage} validation (1-18 digits); the catch guards future changes. */
-    private static long messageNumber(String id) {
-        try {
-            return Long.parseLong(id);
-        } catch (NumberFormatException e) {
-            throw new IllegalArgumentException("Message ids are numeric", e);
-        }
-    }
-
-    /** Lists every recipient of every offered staff group, each person once. */
-    public List<Recipient> allRecipients() {
-        List<Recipient> result = new ArrayList<>();
-        Set<String> seen = new HashSet<>();
-        for (RecipientGroup group : recipientGroups()) {
-            if (RecipientGroups.SKIPPED.contains(group.id())) {
-                continue;
-            }
-            try {
-                recipients(group).stream().filter(r -> seen.add(r.accountId())).forEach(result::add);
-            } catch (LibrusException.ModuleUnavailable e) {
-                // a group this account may not read; skip it, the others still work
-            }
-        }
-        return List.copyOf(result);
     }
 }

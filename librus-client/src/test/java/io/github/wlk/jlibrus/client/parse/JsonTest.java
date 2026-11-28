@@ -31,6 +31,8 @@ class JsonTest {
         assertThat(Json.refId(node, "D")).contains("7");
         assertThat(Json.refLong(node, "E")).isEmpty();
         assertThat(Json.refId(node, "E")).contains("t41");
+        assertThat(Json.refInt(node, "B")).contains(43);
+        assertThat(Json.refInt(node, "E")).isEmpty();
     }
 
     @Test
@@ -42,6 +44,16 @@ class JsonTest {
         assertThat(Json.text(node, "c")).isEmpty();
         assertThat(Json.text(node, "d")).contains("5");
         assertThat(Json.textOr(node, "zzz", "fallback")).isEqualTo("fallback");
+    }
+
+    @Test
+    void fullNameJoinsWhicheverPartsArePresent() throws Exception {
+        JsonNode node = node("{\"f\":\"Anna\",\"l\":\" Nowak \",\"blank\":\" \"}");
+
+        assertThat(Json.fullName(node, "f", "l")).isEqualTo("Anna Nowak");
+        assertThat(Json.fullName(node, "f", "missing")).isEqualTo("Anna");
+        assertThat(Json.fullName(node, "blank", "l")).isEqualTo("Nowak");
+        assertThat(Json.fullName(node, "missing", "blank")).isEmpty();
     }
 
     @Test

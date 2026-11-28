@@ -90,12 +90,10 @@ final class MessageParser {
     }
 
     private static String senderName(JsonNode item) {
-        return Json.text(item, "senderName").orElseGet(() ->
-                (Json.textOr(item, "senderFirstName", "") + " " + Json.textOr(item, "senderLastName", "")).trim());
+        return Json.text(item, "senderName").orElseGet(() -> Json.fullName(item, "senderFirstName", "senderLastName"));
     }
 
     private static String receiverName(JsonNode r) {
-        return Json.text(r, "name").orElseGet(() ->
-                (Json.textOr(r, "firstName", "") + " " + Json.textOr(r, "lastName", "")).trim());
+        return Json.text(r, "name").orElseGet(() -> Json.fullName(r, "firstName", "lastName"));
     }
 }

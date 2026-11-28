@@ -37,8 +37,6 @@ jacoco {
 
 tasks.withType<Test>().configureEach {
     useJUnitPlatform()
-    // Never talk to the live Librus platform from tests.
-    systemProperty("jlibrus.tests.offline", "true")
     testLogging {
         events("failed")
         exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
@@ -64,4 +62,15 @@ val crapCheck = tasks.register<CrapCheckTask>("crapCheck") {
 
 tasks.named("check") {
     dependsOn(crapCheck)
+}
+
+// Docker dependency layer: downloads what compiling (incl. Error Prone) and packaging need while only the build
+// scripts are present, so source changes reuse the layer instead of hitting Maven Central (see Dockerfile).
+tasks.register("resolveDependencies") {
+    group = "build setup"
+    description = "Downloads the annotation processor, compile and runtime classpaths."
+    val classpaths = files(configurations.named("annotationProcessor"), configurations.named("compileClasspath"),
+        configurations.named("runtimeClasspath"))
+    inputs.files(classpaths)
+    doLast { logger.lifecycle("{} files resolved", classpaths.files.size) }
 }

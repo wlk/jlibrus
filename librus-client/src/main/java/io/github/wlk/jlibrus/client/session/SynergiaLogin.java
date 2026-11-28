@@ -3,17 +3,20 @@ package io.github.wlk.jlibrus.client.session;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.wlk.jlibrus.client.Credentials;
+import io.github.wlk.jlibrus.client.Identifiers;
 import io.github.wlk.jlibrus.client.LibrusEndpoints;
 import io.github.wlk.jlibrus.client.LibrusException;
 import io.github.wlk.jlibrus.client.http.HttpResult;
 import io.github.wlk.jlibrus.client.http.HttpTransport;
+import io.github.wlk.jlibrus.client.parse.Json;
 
-import java.io.IOException;
+import java.net.HttpCookie;
 import java.net.URI;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * The Synergia password login: entry point, OAuth form, credentials POST, then a hand-walked redirect chain
@@ -21,7 +24,6 @@ import java.util.Map;
  */
 final class SynergiaLogin {
 
-    static final int MAX_HOPS = 10;
     static final String CLIENT_ID = "46";
     static final List<String> SESSION_COOKIES = List.of("oauth_token", "DZIENNIKSID", "SDZIENNIKSID");
     private static final List<String> CAPTCHA_MARKERS = List.of("g-recaptcha", "recaptcha", "hcaptcha", "captcha");
@@ -41,7 +43,7 @@ final class SynergiaLogin {
         URI authorize = openEntryPoint();
         openAuthorizationForm(authorize);
         URI next = postCredentials(credentials);
-        followChain(next);
+        rejectCaptcha(http.followRedirects(next, endpoints::isTrustedLoginHop, "Librus login"));
         verifySession();
         activateGateway();
     }
@@ -92,30 +94,24 @@ final class SynergiaLogin {
         return trusted(base.resolve(goTo));
     }
 
-    private void followChain(URI start) {
-        URI current = start;
-        for (int hop = 0; hop < MAX_HOPS; hop++) {
-            HttpResult result = http.get(current);
-            if (!result.isRedirect()) {
-                rejectCaptcha(result);
-                return;
-            }
-            current = trusted(result.location().orElseThrow());
-        }
-        throw new LibrusException.ProtocolError("Librus login redirected more than " + MAX_HOPS + " times");
-    }
-
     private void verifySession() {
-        URI synergia = endpoints.synergiaPath("/");
-        if (http.cookie(synergia, "DZIENNIKSID").isEmpty()) {
+        if (http.cookie(endpoints.synergiaPath("/"), "DZIENNIKSID").isEmpty()) {
             throw new LibrusException.ProtocolError("Librus login finished without a Synergia session cookie");
         }
-        if (http.cookie(synergia, "oauth_token").isEmpty()) {
-            HttpResult refresh = http.get(endpoints.synergiaPath("/refreshToken"));
-            if (!refresh.isSuccess() || http.cookie(synergia, "oauth_token").isEmpty()) {
-                throw new LibrusException.ProtocolError("Librus login finished without an API token");
-            }
+        if (apiToken().isEmpty() && refreshApiToken().isEmpty()) {
+            throw new LibrusException.ProtocolError("Librus login finished without an API token");
         }
+    }
+
+    /** Value of the API token cookie ({@code oauth_token}) that Synergia requests carry, if any. */
+    Optional<String> apiToken() {
+        return http.cookie(endpoints.synergiaPath("/"), "oauth_token").map(HttpCookie::getValue);
+    }
+
+    /** Asks Synergia for a fresh API token; the token then held, or empty when the refresh failed. */
+    Optional<String> refreshApiToken() {
+        HttpResult refresh = http.get(endpoints.synergiaPath("/refreshToken"));
+        return refresh.isSuccess() ? apiToken() : Optional.empty();
     }
 
     /** Some accounts need TokenInfo/UserInfo touched once before other gateway resources answer. */
@@ -125,7 +121,7 @@ final class SynergiaLogin {
             return;
         }
         String user = parse(tokenInfo.body()).path("UserIdentifier").asText("");
-        if (!user.isEmpty() && user.matches("[A-Za-z0-9_-]+")) {
+        if (Identifiers.isSafeId(user)) {
             http.get(endpoints.gateway("Auth/UserInfo/" + user), Map.of("Accept", "application/json"));
         }
     }
@@ -161,10 +157,7 @@ final class SynergiaLogin {
     }
 
     private JsonNode parse(String body) {
-        try {
-            return json.readTree(body);
-        } catch (IOException e) {
-            throw new LibrusException.ServiceUnavailable("Librus login answered with malformed JSON", e);
-        }
+        return Json.parse(json, body,
+                e -> new LibrusException.ServiceUnavailable("Librus login answered with malformed JSON", e));
     }
 }

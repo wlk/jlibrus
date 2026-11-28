@@ -1,8 +1,8 @@
 import { api } from '../api.js';
 import { empty, fmtDateTime, h, mount, toast } from '../dom.js';
 import { t } from '../i18n.js';
-import { childPath } from '../state.js';
-import { go } from '../router.js';
+import { childPath, go } from '../state.js';
+import { action, groupBy } from './common.js';
 
 // Routes: #/messages[/inbox|outbox[/page]] , #/messages/read/<mailbox>/<id> , #/messages/compose[/<replyToId>]
 export async function render(container, params) {
@@ -36,10 +36,10 @@ async function renderMessage(container, mailbox, id) {
   const attachments = m.attachments.map((a) => h('button', {
     class: 'secondary',
     on: {
-      click: async () => {
-        const link = await api.get(childPath(`/messages/${mailbox}/${encodeURIComponent(m.id)}/attachments/${encodeURIComponent(a.id)}`));
+      click: (e) => action(e.currentTarget, async () => {
+        const link = await api.get(childPath(`/messages/${encodeURIComponent(mailbox)}/${encodeURIComponent(m.id)}/attachments/${encodeURIComponent(a.id)}`));
         window.open(link.url, '_blank', 'noopener');
-      }
+      })
     }
   }, '📎 ' + a.filename));
   mount(container,
@@ -70,18 +70,14 @@ async function renderCompose(container, replyToId) {
   const text = h('textarea', { id: 'text', maxlength: 10000, required: true });
   const submit = h('button', { type: 'submit' }, t('send'));
 
-  async function onSubmit(event) {
+  function onSubmit(event) {
     event.preventDefault();
-    submit.disabled = true;
     const ids = reply ? [reply.to] : [...select.selectedOptions].map((o) => o.value);
-    try {
+    action(submit, async () => {
       await api.post(childPath('/messages'), { recipientIds: ids, topic: topic.value, text: text.value, replyToId: reply ? reply.id : null });
       toast(t('sent'));
       go('messages/outbox');
-    } catch (error) {
-      toast(`${t('error')}: ${error.message}`);
-      submit.disabled = false;
-    }
+    });
   }
 
   mount(container,
@@ -95,8 +91,6 @@ async function renderCompose(container, replyToId) {
 }
 
 function groupOptions(recipients) {
-  const groups = new Map();
-  recipients.forEach((r) => groups.set(r.groupName, [...(groups.get(r.groupName) || []), r]));
-  return [...groups.entries()].map(([name, people]) =>
+  return [...groupBy(recipients, (r) => r.groupName).entries()].map(([name, people]) =>
     h('optgroup', { label: name }, people.map((p) => h('option', { value: p.accountId }, p.name))));
 }

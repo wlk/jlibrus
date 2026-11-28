@@ -15,7 +15,6 @@ public final class Texts {
             entry("teacherAbsent", "Nieobecność nauczyciela", "Teacher absent"),
             entry("lesson", "lekcja", "lesson"),
             entry("luckyNumber", "Szczęśliwy numerek", "Lucky number"),
-            entry("grade", "Ocena", "Grade"),
             entry("note.POSITIVE", "Pochwała", "Praise"),
             entry("note.NEGATIVE", "Uwaga negatywna", "Negative note"),
             entry("note.NEUTRAL", "Uwaga", "Note"),
@@ -51,6 +50,11 @@ public final class Texts {
         if (values == null) {
             return key;
         }
-        return "en".equals(locale.getLanguage()) ? values[1] : values[0];
+        return pick(locale, values[0], values[1]);
+    }
+
+    /** English for an English locale, Polish for any other - the default of {@code app.language} and the web app. */
+    public static String pick(Locale locale, String polish, String english) {
+        return "en".equals(locale.getLanguage()) ? english : polish;
     }
 }

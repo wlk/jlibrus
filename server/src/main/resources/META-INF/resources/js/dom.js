@@ -66,10 +66,6 @@ export function toast(text) {
   toast.timer = setTimeout(() => { el.hidden = true; }, 3500);
 }
 
-export function loading(container) {
-  mount(container, h('p', { class: 'muted' }, '…'));
-}
-
 export function empty(text) {
   return h('p', { class: 'muted' }, text);
 }

@@ -8,6 +8,7 @@ import io.github.wlk.jlibrus.client.model.JustifiedLesson;
 import io.github.wlk.jlibrus.client.model.SchoolTrip;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -21,15 +22,18 @@ import java.util.Optional;
  */
 public final class ExtraParser {
 
+    private static final Comparator<Justification> NEWEST_FIRST =
+            Comparator.comparing(Justification::postedAt, Comparator.nullsFirst(Comparator.<LocalDateTime>naturalOrder()))
+                    .reversed();
+    private static final Comparator<SchoolTrip> SOONEST_FIRST =
+            Comparator.comparing(SchoolTrip::from, Comparator.nullsLast(Comparator.<LocalDate>naturalOrder()));
+
     private ExtraParser() {
     }
 
     /** {@code Justifications}, newest first. */
     public static List<Justification> justifications(JsonNode root) {
-        List<Justification> result = new ArrayList<>(Json.list(root, "data", ExtraParser::justification).stream()
-                .flatMap(Optional::stream).toList());
-        result.sort(Comparator.comparing(Justification::postedAt, Comparator.nullsFirst(Comparator.naturalOrder())).reversed());
-        return List.copyOf(result);
+        return Json.listPresent(root, "data", ExtraParser::justification).stream().sorted(NEWEST_FIRST).toList();
     }
 
     private static Optional<Justification> justification(JsonNode j) {
@@ -52,16 +56,13 @@ public final class ExtraParser {
 
     /** {@code SchoolTrips}, soonest first. */
     public static List<SchoolTrip> schoolTrips(JsonNode root) {
-        List<SchoolTrip> result = new ArrayList<>(Json.list(root, "Data", ExtraParser::trip).stream()
-                .flatMap(Optional::stream).toList());
-        result.sort(Comparator.comparing(SchoolTrip::from, Comparator.nullsLast(Comparator.naturalOrder())));
-        return List.copyOf(result);
+        return Json.listPresent(root, "Data", ExtraParser::trip).stream().sorted(SOONEST_FIRST).toList();
     }
 
     private static Optional<SchoolTrip> trip(JsonNode t) {
         return Json.longValue(t, "id").map(id -> {
             LocalDate from = Json.date(t, "termFrom").orElse(null);
-            String creator = (Json.textOr(t, "creatorName", "") + " " + Json.textOr(t, "creatorLastName", "")).trim();
+            String creator = Json.fullName(t, "creatorName", "creatorLastName");
             String coordinator = Json.text(t, "coordinatorName").orElse(creator.isEmpty() ? null : creator);
             return new SchoolTrip(id, Json.textOr(t, "destination", ""), Json.textOr(t, "route", ""),
                     Json.textOr(t, "locomotion", ""), from, Json.date(t, "termTo").orElse(from), coordinator);
@@ -71,13 +72,13 @@ public final class ExtraParser {
     /** {@code DescriptiveGrades}: the shown value is {@code Map}/{@code RealGradeValue}, never {@code Grade}. */
     public static List<DescriptiveGrade> descriptiveGrades(JsonNode root, Map<Long, String> skills,
                                                            Map<Long, String> comments) {
-        return Json.list(root, "Grades", g -> classic(g, skills, comments)).stream().flatMap(Optional::stream).toList();
+        return Json.listPresent(root, "Grades", g -> classic(g, skills, comments));
     }
 
     private static Optional<DescriptiveGrade> classic(JsonNode g, Map<Long, String> skills, Map<Long, String> comments) {
         return Json.longValue(g, "Id").map(id -> {
             Long skillId = Json.refLong(g, "Skill").orElse(null);
-            List<String> texts = RecordParser.refIds(g.path("Comments")).stream()
+            List<String> texts = Json.refLongs(g.path("Comments")).stream()
                     .map(comments::get).filter(c -> c != null && !c.isBlank()).toList();
             return new DescriptiveGrade(String.valueOf(id), Json.refLong(g, "Subject").orElse(null),
                     Json.text(g, "Map").or(() -> Json.text(g, "RealGradeValue")).orElse(""),
@@ -92,7 +93,7 @@ public final class ExtraParser {
 
     /** Partial grades of the newer descriptive system ({@code data} envelope, camelCase fields). */
     public static List<DescriptiveGrade> partialGrades(JsonNode root, Map<String, Long> subjectsByLid) {
-        return Json.list(root, "data", g -> partial(g, subjectsByLid)).stream().flatMap(Optional::stream).toList();
+        return Json.listPresent(root, "data", g -> partial(g, subjectsByLid));
     }
 
     private static Optional<DescriptiveGrade> partial(JsonNode g, Map<String, Long> subjectsByLid) {

@@ -66,7 +66,7 @@ class ResourcesTest {
             assertThat(g.kind()).isEqualTo(GradeKind.REGULAR);
             assertThat(g.addedAt()).isNotNull();
         });
-        assertThat(account.gradeComments()).isNotEmpty();
+        assertThat(account.gradeComments()).isNotEmpty().allSatisfy(c -> assertThat(c.text()).isNotBlank());
     }
 
     @Test

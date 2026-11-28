@@ -234,7 +234,3 @@ label { display: block; margin: 10px 0 4px; font-weight: 600; font-size: 14px; }
 .tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
 .tabs button.active { background: var(--primary); color: var(--primary-text); }
 .tabs button { background: transparent; color: var(--primary); }
-
-.day-head { font-weight: 700; margin-top: 12px; }
-
-.preview-frame { width: 100%; min-height: 360px; border: 1px solid var(--border); border-radius: 8px; background: #fff; }

@@ -4,9 +4,10 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.wlk.jlibrus.client.LibrusException;
 import io.github.wlk.jlibrus.client.http.HttpResult;
+import io.github.wlk.jlibrus.client.parse.Json;
 
-import java.io.IOException;
 import java.util.Map;
+import java.util.function.Supplier;
 
 /**
  * Reads JSON resources from the Synergia gateway ({@code /gateway/api/2.0/...}), renewing the session when
@@ -27,6 +28,11 @@ public final class Gateway {
     /** GET {@code resource} (e.g. {@code "Grades"} or {@code "Timetables?weekStart=2026-11-23"}). */
     public JsonNode get(String resource) {
         return session.exclusive(() -> call(resource, () -> fetch(resource)));
+    }
+
+    /** Like {@link #get}, for modules a school may switch off: then (401/403/404) it reads as a missing node. */
+    public JsonNode getOrMissing(String resource) {
+        return Json.orMissing(() -> get(resource));
     }
 
     /** POST with an empty JSON object to a read-only resource that requires POST, returning its JSON. */
@@ -54,21 +60,27 @@ public final class Gateway {
         return session.http().sendJson("POST", session.endpoints().gateway(resource), null);
     }
 
-    private JsonNode call(String resource, java.util.function.Supplier<HttpResult> request) {
+    private JsonNode call(String resource, Supplier<HttpResult> request) {
         int generation = session.ensureLoggedIn();
         HttpResult result = request.get();
         if (isExpired(result)) {
-            generation = session.renew(generation);
-            result = request.get();
-        }
-        if (isExpired(result)) {
-            session.relogin(generation);
-            result = request.get();
+            result = renewAndRetry(generation, request);
         }
         if (isExpired(result)) {
             throw new LibrusException.SessionExpired("Librus keeps rejecting the session for " + resource);
         }
         return classify(resource, result);
+    }
+
+    /** Renews and retries; a refreshed token that is still rejected gets one password login, never a second. */
+    private HttpResult renewAndRetry(int generation, Supplier<HttpResult> request) {
+        SynergiaSession.Renewal renewal = session.renew(generation);
+        HttpResult result = request.get();
+        if (isExpired(result) && !renewal.passwordLogin()) {
+            session.relogin(renewal.generation());
+            result = request.get();
+        }
+        return result;
     }
 
     private HttpResult fetch(String resource) {
@@ -89,7 +101,8 @@ public final class Gateway {
 
     private JsonNode classify(String resource, HttpResult result) {
         if (result.isSuccess()) {
-            return parse(resource, result.body());
+            return Json.parse(json, result.body(),
+                    e -> new LibrusException.ProtocolError("Malformed JSON from " + resource, e));
         }
         throw failure(resource, result.status());
     }
@@ -101,13 +114,5 @@ public final class Gateway {
             case 429, 502, 503, 504 -> new LibrusException.ServiceUnavailable("Librus is unavailable (HTTP " + status + ")");
             default -> new LibrusException.ProtocolError("Unexpected HTTP " + status + " for " + resource);
         };
-    }
-
-    private JsonNode parse(String resource, String body) {
-        try {
-            return json.readTree(body);
-        } catch (IOException e) {
-            throw new LibrusException.ProtocolError("Malformed JSON from " + resource, e);
-        }
     }
 }

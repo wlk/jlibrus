@@ -1,6 +1,9 @@
 package io.github.wlk.jlibrus.client.parse;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.MissingNode;
 import io.github.wlk.jlibrus.client.LibrusException;
 
 import java.time.LocalDate;
@@ -8,9 +11,11 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 /**
  * Lenient readers for Librus JSON: ids may be numbers or strings, optional fields may be missing or null,
@@ -21,6 +26,31 @@ public final class Json {
     private Json() {
     }
 
+    /**
+     * Parses a Librus answer. Blank text yields a {@link MissingNode};
+     * malformed text throws what {@code failure} makes of the parse error.
+     */
+    public static JsonNode parse(ObjectMapper mapper, String text,
+                                 Function<? super JsonProcessingException, ? extends LibrusException> failure) {
+        try {
+            return mapper.readTree(text);
+        } catch (JsonProcessingException e) {
+            throw failure.apply(e);
+        }
+    }
+
+    /**
+     * Runs {@code read}; a module this account may not use (the school switched it off) reads as a
+     * {@link MissingNode}, which every parser reads as "nothing there".
+     */
+    public static JsonNode orMissing(Supplier<JsonNode> read) {
+        try {
+            return read.get();
+        } catch (LibrusException.ModuleUnavailable e) {
+            return MissingNode.getInstance();
+        }
+    }
+
     /** Items of the array under {@code rootKey}, each mapped; a missing root yields an empty list. */
     public static <T> List<T> list(JsonNode root, String rootKey, Function<JsonNode, T> mapper) {
         JsonNode array = root.path(rootKey);
@@ -29,7 +59,12 @@ public final class Json {
         }
         List<T> result = new ArrayList<>(array.size());
         array.forEach(item -> result.add(mapper.apply(item)));
-        return List.copyOf(result);
+        return Collections.unmodifiableList(result);
+    }
+
+    /** {@link #list} for readers that may reject an item (empty result); rejected items are left out. */
+    public static <T> List<T> listPresent(JsonNode root, String rootKey, Function<JsonNode, Optional<T>> reader) {
+        return list(root, rootKey, reader).stream().flatMap(Optional::stream).toList();
     }
 
     public static JsonNode object(JsonNode root, String rootKey) {
@@ -53,17 +88,38 @@ public final class Json {
         return text(node, field).orElse(fallback);
     }
 
+    /** "First Last" from two name fields, either of which may be missing; empty when both are. */
+    public static String fullName(JsonNode node, String firstNameField, String lastNameField) {
+        return (textOr(node, firstNameField, "") + " " + textOr(node, lastNameField, "")).trim();
+    }
+
     /** Id of a reference object {@code {"Id": 123}} or {@code {"Id": "123"}}. */
     public static Optional<String> refId(JsonNode node, String field) {
-        JsonNode ref = node.get(field);
-        if (ref == null || ref.isNull()) {
-            return Optional.empty();
-        }
-        return ref.isObject() ? text(ref, "Id") : Optional.of(ref.asText()).filter(s -> !s.isBlank());
+        return refIdOf(node.get(field));
     }
 
     public static Optional<Long> refLong(JsonNode node, String field) {
         return refId(node, field).flatMap(Json::parseLong);
+    }
+
+    /** {@link #refLong} for small numbers such as colours. */
+    public static Optional<Integer> refInt(JsonNode node, String field) {
+        return refLong(node, field).map(Long::intValue);
+    }
+
+    /** Numeric ids of a list of references (objects or bare ids); unreadable items are left out. */
+    public static List<Long> refLongs(JsonNode array) {
+        List<Long> ids = new ArrayList<>();
+        array.forEach(item -> refIdOf(item).flatMap(Json::parseLong).ifPresent(ids::add));
+        return List.copyOf(ids);
+    }
+
+    /** A reference is an object with an {@code Id} or, in some responses, the bare id itself. */
+    private static Optional<String> refIdOf(JsonNode ref) {
+        if (ref == null || ref.isNull()) {
+            return Optional.empty();
+        }
+        return ref.isObject() ? text(ref, "Id") : Optional.of(ref.asText()).filter(s -> !s.isBlank());
     }
 
     public static long requiredLong(JsonNode node, String field) {

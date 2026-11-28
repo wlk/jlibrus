@@ -2,6 +2,7 @@ plugins {
     `java-library`
     `maven-publish`
     id("jlibrus.pitest-conventions")
+    id("jlibrus.strict-compile")
 }
 
 description = "Pure Java client for the Librus Synergia school register (unofficial)"
@@ -15,10 +16,6 @@ dependencies {
     api(libs.jackson.databind)
 
     testImplementation(project(":librus-mock"))
-}
-
-tasks.withType<JavaCompile>().configureEach {
-    options.compilerArgs.add("-Werror")
 }
 
 pitest {

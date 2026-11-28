@@ -7,6 +7,7 @@ import io.github.wlk.jlibrus.client.model.Homework;
 import io.github.wlk.jlibrus.client.model.ParentMeeting;
 import io.github.wlk.jlibrus.client.model.TeacherAbsence;
 
+import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
 
@@ -58,7 +59,7 @@ public final class CalendarParser {
                 Json.requiredLong(d, "Id"),
                 Json.textOr(d, "Name", ""),
                 Json.date(d, "DateFrom").orElse(null),
-                Json.date(d, "DateTo").or(() -> Json.date(d, "DateFrom")).orElse(null)));
+                dateTo(d)));
     }
 
     public static List<TeacherAbsence> teacherAbsences(JsonNode root) {
@@ -66,8 +67,13 @@ public final class CalendarParser {
                 Json.requiredLong(d, "Id"),
                 Json.refLong(d, "Teacher").orElse(null),
                 Json.date(d, "DateFrom").orElse(null),
-                Json.date(d, "DateTo").or(() -> Json.date(d, "DateFrom")).orElse(null),
+                dateTo(d),
                 Json.time(d, "TimeFrom").orElse(null),
                 Json.time(d, "TimeTo").orElse(null)));
+    }
+
+    /** {@code DateTo}; one-day entries may leave it out, then it is {@code DateFrom}. */
+    private static LocalDate dateTo(JsonNode d) {
+        return Json.date(d, "DateTo").or(() -> Json.date(d, "DateFrom")).orElse(null);
     }
 }

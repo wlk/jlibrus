@@ -11,7 +11,7 @@ import java.util.Set;
  * @param types    entry types exported (only calendar types make sense)
  */
 public record CalendarFeed(String id, String name, String token, Set<String> childIds, Set<EntryType> types,
-                           Instant createdAt) {
+                           Instant createdAt) implements ChildScoped {
 
     public static final int MAX_NAME_LENGTH = 200;
 
@@ -26,10 +26,6 @@ public record CalendarFeed(String id, String name, String token, Set<String> chi
         }
         childIds = Set.copyOf(childIds);
         types = Set.copyOf(types);
-    }
-
-    public boolean includesChild(String childId) {
-        return childIds.isEmpty() || childIds.contains(childId);
     }
 
     public CalendarFeed withToken(String newToken) {

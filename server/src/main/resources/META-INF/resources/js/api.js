@@ -53,9 +53,7 @@ export async function login(username, password) {
   return response.ok;
 }
 
+// Ends the server session only; the caller shows the login screen, which also drops the offline API cache.
 export async function logout() {
   await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' });
-  if (navigator.serviceWorker && navigator.serviceWorker.controller) {
-    navigator.serviceWorker.controller.postMessage('logout');
-  }
 }

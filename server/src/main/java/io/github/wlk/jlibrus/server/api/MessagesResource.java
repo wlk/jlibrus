@@ -70,10 +70,12 @@ public class MessagesResource {
         return message;
     }
 
+    /** Librus links attachments by message alone; the mailbox is only checked, like the sibling endpoints do. */
     @GET
     @Path("/{mailbox}/{messageId}/attachments/{attachmentId}")
-    public Link attachment(@PathParam("id") String id, @PathParam("messageId") String messageId,
-                           @PathParam("attachmentId") String attachmentId) {
+    public Link attachment(@PathParam("id") String id, @PathParam("mailbox") String mailbox,
+                           @PathParam("messageId") String messageId, @PathParam("attachmentId") String attachmentId) {
+        mailbox(mailbox);
         return new Link(children.account(id).messages().attachmentLink(attachmentId, messageId));
     }
 

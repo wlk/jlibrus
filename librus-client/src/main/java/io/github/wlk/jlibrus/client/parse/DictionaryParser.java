@@ -41,7 +41,7 @@ public final class DictionaryParser {
                 Json.integer(account, "GroupId").map(PARENT_GROUPS::contains).orElse(false),
                 Json.textOr(user, "FirstName", ""),
                 Json.textOr(user, "LastName", ""),
-                Json.text(account, "UserId").flatMap(Json::parseLong).orElse(null));
+                Json.longValue(account, "UserId").orElse(null));
     }
 
     public static List<Person> users(JsonNode root) {
@@ -92,7 +92,7 @@ public final class DictionaryParser {
                 Json.textOr(c, "Name", ""),
                 Json.integer(c, "Weight").orElse(null),
                 Json.optionalFlag(c, "CountToTheAverage").orElse(null),
-                Json.refLong(c, "Color").map(Long::intValue).orElse(null)));
+                Json.refInt(c, "Color").orElse(null)));
     }
 
     public static List<GradeComment> gradeComments(JsonNode root) {
@@ -125,7 +125,7 @@ public final class DictionaryParser {
 
     public static List<EventCategory> eventCategories(JsonNode root) {
         return Json.list(root, "Categories", c -> new EventCategory(Json.requiredLong(c, "Id"),
-                Json.textOr(c, "Name", ""), Json.refLong(c, "Color").map(Long::intValue).orElse(null)));
+                Json.textOr(c, "Name", ""), Json.refInt(c, "Color").orElse(null)));
     }
 
     public static List<NoteCategory> noteCategories(JsonNode root) {

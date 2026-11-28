@@ -25,12 +25,16 @@ public class TimelineRepository {
         this.jdbc = jdbc;
     }
 
-    public boolean hasAny(String childId) {
-        return jdbc.queryOne("SELECT 1 FROM timeline_entry WHERE child_id = ? LIMIT 1",
-                s -> s.setString(1, childId), row -> true).isPresent();
+    /** Keys of every entry recorded for the child; empty before its first sync. */
+    public Set<String> knownKeys(String childId) {
+        return Set.copyOf(jdbc.query("SELECT entry_key FROM timeline_entry WHERE child_id = ?",
+                s -> s.setString(1, childId), row -> row.getString(1)));
     }
 
-    /** Inserts entries not yet known; already-known keys keep their original noticed time. Returns new count. */
+    /**
+     * Inserts the entries and returns how many rows were added. Callers pass only unknown entries; a key that is
+     * stored already keeps its row and original noticed time.
+     */
     public int insertNew(List<TimelineEntry> entries) {
         return jdbc.batch("INSERT INTO timeline_entry (" + COLUMNS + ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) "
                 + "ON CONFLICT (child_id, entry_key) DO NOTHING", entries, (s, e) -> {
@@ -47,16 +51,13 @@ public class TimelineRepository {
         });
     }
 
-    /** Entries noticed in {@code [from, to)} for the given children (empty = all) and types. */
-    public List<TimelineEntry> findNoticed(Set<String> childIds, Set<EntryType> types, Instant from, Instant to) {
+    /** Entries of every child and type noticed in {@code [from, to)}, newest first. */
+    public List<TimelineEntry> findNoticed(Instant from, Instant to) {
         return jdbc.query("SELECT " + COLUMNS + " FROM timeline_entry WHERE noticed_at >= ? AND noticed_at < ? "
-                        + "ORDER BY noticed_at DESC, entry_key", s -> {
-                    Columns.setInstant(s, 1, from);
-                    Columns.setInstant(s, 2, to);
-                }, this::map).stream()
-                .filter(e -> childIds.isEmpty() || childIds.contains(e.childId()))
-                .filter(e -> types.contains(e.type()))
-                .toList();
+                + "ORDER BY noticed_at DESC, entry_key", s -> {
+            Columns.setInstant(s, 1, from);
+            Columns.setInstant(s, 2, to);
+        }, this::map);
     }
 
     public List<TimelineEntry> findRecent(String childId, int limit) {

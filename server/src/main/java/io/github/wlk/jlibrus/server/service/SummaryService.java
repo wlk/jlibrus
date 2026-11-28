@@ -2,7 +2,6 @@ package io.github.wlk.jlibrus.server.service;
 
 import io.github.wlk.jlibrus.client.LibrusException;
 import io.github.wlk.jlibrus.server.config.AppContext;
-import io.github.wlk.jlibrus.server.domain.EntryType;
 import io.github.wlk.jlibrus.server.domain.Subscription;
 import io.github.wlk.jlibrus.server.domain.TimelineEntry;
 import io.github.wlk.jlibrus.server.domain.agenda.AgendaItem;
@@ -26,11 +25,9 @@ import org.jboss.logging.Logger;
 import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -177,8 +174,7 @@ public class SummaryService {
 
     private Context gather(SummaryWindow window) {
         Map<String, String> names = childService.names();
-        List<TimelineEntry> news = timeline.findNoticed(Set.of(), EnumSet.allOf(EntryType.class),
-                window.newSince(), window.newUntil());
+        List<TimelineEntry> news = timeline.findNoticed(window.newSince(), window.newUntil());
         Map<String, List<AgendaItem>> agendas = new HashMap<>();
         boolean degraded = false;
         for (String id : names.keySet()) {

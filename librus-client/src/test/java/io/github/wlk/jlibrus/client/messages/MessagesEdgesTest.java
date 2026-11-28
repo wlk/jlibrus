@@ -93,6 +93,21 @@ class MessagesEdgesTest {
     }
 
     @Test
+    void sendWithEmptyAnswerIsAcceptedWithoutId() {
+        server.on("/api/messages", Reply.html(200, " "));
+
+        assertThat(messages.send(OutgoingMessage.newThread(List.of("1"), "t", "x")).messageId()).isNull();
+    }
+
+    @Test
+    void malformedJsonFromTheModuleIsAProtocolError() {
+        server.on("/api/inbox/unreadMessagesCount", Reply.json(200, "{broken"));
+
+        assertThatThrownBy(messages::unreadCounts).isInstanceOf(LibrusException.ProtocolError.class)
+                .hasMessageContaining("messages module");
+    }
+
+    @Test
     void locksAreReleasedForOtherThreads() throws Exception {
         server.on("/api/inbox/unreadMessagesCount", Reply.json(200, "{\"data\":{}}"));
         messages.unreadCounts();

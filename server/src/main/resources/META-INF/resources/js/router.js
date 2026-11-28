@@ -27,10 +27,6 @@ export function currentRoute() {
   return { name, params: parts.slice(1) };
 }
 
-export function go(path) {
-  location.hash = '#/' + path;
-}
-
 export async function renderRoute(container) {
   const { name, params } = currentRoute();
   mount(container, h('p', { class: 'muted' }, t('loading')));
