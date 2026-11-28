@@ -32,6 +32,12 @@ class EntryTypeTest {
     }
 
     @Test
+    void labelsFallBackToPolishLikeEveryOtherServerText() {
+        assertThat(EntryType.GRADE.label(Locale.GERMAN)).isEqualTo("Oceny");
+        assertThat(Texts.get("summary.new", Locale.GERMAN)).isEqualTo("Nowe wpisy");
+    }
+
+    @Test
     void calendarTypesAreThoseWithDates() {
         assertThat(EntryType.calendarTypes())
                 .contains(EntryType.EVENT, EntryType.HOMEWORK, EntryType.FREE_DAY)

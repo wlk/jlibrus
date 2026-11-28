@@ -39,7 +39,7 @@ public enum EntryType {
     }
 
     public String label(Locale locale) {
-        return "pl".equals(locale.getLanguage()) ? labelPl : labelEn;
+        return Texts.pick(locale, labelPl, labelEn);
     }
 
     /** Whether entries of this type have a date worth exporting to a calendar. */
