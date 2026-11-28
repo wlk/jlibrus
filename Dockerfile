@@ -5,15 +5,20 @@
 # release does not run Gradle under QEMU. Only the runtime stages below are per target platform.
 FROM --platform=$BUILDPLATFORM eclipse-temurin:25-jdk AS build
 WORKDIR /src
+# Dependency layer: build scripts only, so it is rebuilt (and Maven Central asked) only when they change. The
+# downloads live in the layer, not in a --mount=type=cache directory, because only layers reach the CI (gha) cache.
 COPY gradlew settings.gradle.kts build.gradle.kts gradle.properties ./
 COPY gradle gradle
 COPY buildSrc buildSrc
-RUN ./gradlew --no-daemon --version >/dev/null
+COPY librus-client/build.gradle.kts librus-client/
+COPY librus-mock/build.gradle.kts librus-mock/
+COPY server/build.gradle.kts server/
+RUN ./gradlew --no-daemon --console=plain resolveDependencies :server:quarkusBuildAppModel
 COPY librus-client librus-client
 COPY librus-mock librus-mock
 COPY server server
-RUN --mount=type=cache,target=/root/.gradle/caches \
-    ./gradlew --no-daemon --console=plain :server:quarkusBuild :librus-mock:installDist -x test
+# --offline: a dependency missing from the layer above fails here instead of being downloaded on every source change.
+RUN ./gradlew --no-daemon --console=plain --offline :server:quarkusBuild :librus-mock:installDist -x test
 
 # Runtime base: Ubuntu security updates published after the base image was built, and no pebble
 # (an unused service manager whose bundled Go runtime trails security releases).
