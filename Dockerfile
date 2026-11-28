@@ -1,7 +1,9 @@
 # syntax=docker/dockerfile:1.7
 # Multi-target build: `--target server` (Quarkus app + PWA) or `--target librus-mock` (offline Librus mock).
 
-FROM eclipse-temurin:25-jdk AS build
+# The build output is portable JVM bytecode, so it is built once on the builder's own platform: a multi-platform
+# release does not run Gradle under QEMU. Only the runtime stages below are per target platform.
+FROM --platform=$BUILDPLATFORM eclipse-temurin:25-jdk AS build
 WORKDIR /src
 COPY gradlew settings.gradle.kts build.gradle.kts gradle.properties ./
 COPY gradle gradle
