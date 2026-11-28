@@ -125,7 +125,7 @@ final class SynergiaLogin {
             return;
         }
         String user = parse(tokenInfo.body()).path("UserIdentifier").asText("");
-        if (!user.isEmpty() && user.matches("[A-Za-z0-9_-]+")) {
+        if (user.matches("[A-Za-z0-9_-]{1,100}")) {
             http.get(endpoints.gateway("Auth/UserInfo/" + user), Map.of("Accept", "application/json"));
         }
     }

@@ -55,6 +55,16 @@ class LoginEdgeCasesTest {
     }
 
     @Test
+    void overlongUserIdentifierIsNotPutIntoAPath() {
+        server.happyLogin(SESSION, TOKEN)
+                .on("/gateway/api/2.0/Auth/TokenInfo", Reply.json(200, "{\"UserIdentifier\":\"" + "L".repeat(101) + "\"}"));
+
+        login();
+
+        assertThat(server.seen()).noneMatch(s -> s.path().contains("UserInfo"));
+    }
+
+    @Test
     void nonJsonTokenInfoSkipsActivation() {
         server.happyLogin(SESSION, TOKEN).on("/gateway/api/2.0/Auth/TokenInfo", Reply.html(200, "<html>"));
 
