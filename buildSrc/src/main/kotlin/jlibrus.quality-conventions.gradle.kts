@@ -55,7 +55,7 @@ val cpdCheck = tasks.register<JavaExec>("cpdCheck") {
     inputs.dir(sources)
     outputs.file(report)
     args("cpd", "--minimum-tokens", "100", "--language", "java", "--dir", sources.asFile.path,
-        "--format", "text", "--report-file", report.get().asFile.path, "--no-fail-on-violation=false")
+        "--format", "text", "--report-file", report.get().asFile.path)
     doFirst { report.get().asFile.parentFile.mkdirs() }
 }
 
