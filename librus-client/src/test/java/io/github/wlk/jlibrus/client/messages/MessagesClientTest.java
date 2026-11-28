@@ -73,6 +73,8 @@ class MessagesClientTest {
         assertThat(all).extracting(Recipient::accountId).doesNotHaveDuplicates().contains("1001", "1011");
         assertThat(all).filteredOn(r -> r.accountId().equals("1001")).singleElement()
                 .satisfies(r -> assertThat(r.groupId()).isEqualTo("tutors"));
+        assertThat(messages.recipients(new RecipientGroup("tutors", "Wychowawcy")))
+                .extracting(Recipient::accountId).contains("1001");
     }
 
     @Test

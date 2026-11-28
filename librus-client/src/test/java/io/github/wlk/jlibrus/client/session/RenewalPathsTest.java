@@ -111,6 +111,15 @@ class RenewalPathsTest {
     }
 
     @Test
+    void acceptedPostIsSentOnceWithoutRenewal() {
+        loginWithRefreshingTokens().on("/gateway/api/2.0/SchoolNotices/MarkAsRead/y", Reply.json(200, "{}"));
+
+        assertThat(new Gateway(session(), new ObjectMapper()).post("SchoolNotices/MarkAsRead/y").status()).isEqualTo(200);
+        assertThat(server.count("/refreshToken")).isZero();
+        assertThat(server.count("/gateway/api/2.0/SchoolNotices/MarkAsRead/y")).isEqualTo(1);
+    }
+
+    @Test
     void refreshAnsweringErrorFallsBackToPasswordLogin() {
         server.happyLogin("DZIENNIKSID=d; Path=/", "oauth_token=t0; Path=/")
                 .on("/refreshToken", Reply.cookies(500, "", "oauth_token=new; Path=/"));
@@ -232,7 +241,7 @@ class RenewalPathsTest {
     void renewOrReloginBeforeAnyLoginPerformsAPasswordLogin() {
         loginWithRefreshingTokens();
 
-        assertThat(session().renew(0).generation()).isEqualTo(1);
+        assertThat(session().renew(5).generation()).isEqualTo(1);
         assertThat(session().relogin(5)).isEqualTo(1);
         assertThat(posts()).isEqualTo(2);
         assertThat(server.count("/refreshToken")).isZero();
