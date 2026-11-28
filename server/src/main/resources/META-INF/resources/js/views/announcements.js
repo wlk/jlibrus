@@ -2,6 +2,7 @@ import { api } from '../api.js';
 import { empty, fmtDate, h, mount, toast } from '../dom.js';
 import { t } from '../i18n.js';
 import { childPath } from '../state.js';
+import { action } from './common.js';
 
 export async function render(container) {
   const items = await api.get(childPath('/announcements'));
@@ -14,11 +15,11 @@ function card(a, container) {
   const markButton = a.read ? null : h('button', {
     class: 'secondary',
     on: {
-      click: async () => {
+      click: (e) => action(e.currentTarget, async () => {
         await api.post(childPath(`/announcements/${encodeURIComponent(a.id)}/read`));
         toast(t('read'));
-        render(container);
-      }
+        await render(container);
+      })
     }
   }, t('markRead'));
   return h('div', { class: 'card' },

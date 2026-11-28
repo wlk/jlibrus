@@ -1,6 +1,6 @@
 // Small render helpers shared by several views.
 import { api } from '../api.js';
-import { addDays, fmtDate, fmtTime, h, isoDate } from '../dom.js';
+import { addDays, fmtDate, fmtTime, h, isoDate, toast } from '../dom.js';
 import { t } from '../i18n.js';
 
 const TYPE_CLASS = { EVENT: 'warn', HOMEWORK: '', TIMETABLE_CHANGE: 'danger', FREE_DAY: 'ok', PARENT_MEETING: '' };
@@ -51,6 +51,19 @@ export function agendaItem(item, lang) {
       h('span', { class: 'muted small' }, when(item))),
     item.detail ? h('div', { class: 'muted small message-body' }, item.detail) : null,
     item.location ? h('div', { class: 'muted small' }, `${t('room')}: ${item.location}`) : null);
+}
+
+// Runs what a button started: the button is disabled until fn settles and a failure becomes a toast, never an
+// unhandled rejection or a button stuck disabled.
+export async function action(button, fn) {
+  button.disabled = true;
+  try {
+    await fn();
+  } catch (error) {
+    toast(`${t('error')}: ${error.message || error}`);
+  } finally {
+    button.disabled = false;
+  }
 }
 
 // A YYYY-MM-DD route parameter as that day at local noon (safe from DST shifts); now when absent or malformed.
