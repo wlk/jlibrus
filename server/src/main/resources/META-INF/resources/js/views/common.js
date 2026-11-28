@@ -1,5 +1,5 @@
 // Small render helpers shared by several views.
-import { api } from '../api.js';
+import { api, ApiError } from '../api.js';
 import { addDays, fmtDate, fmtTime, h, isoDate, toast } from '../dom.js';
 import { t } from '../i18n.js';
 
@@ -54,13 +54,16 @@ export function agendaItem(item, lang) {
 }
 
 // Runs what a button started: the button is disabled until fn settles and a failure becomes a toast, never an
-// unhandled rejection or a button stuck disabled.
+// unhandled rejection or a button stuck disabled. A 401 stays silent: the login screen is already shown (as in
+// renderRoute).
 export async function action(button, fn) {
   button.disabled = true;
   try {
     await fn();
   } catch (error) {
-    toast(`${t('error')}: ${error.message || error}`);
+    if (!(error instanceof ApiError && error.status === 401)) {
+      toast(`${t('error')}: ${error.message || error}`);
+    }
   } finally {
     button.disabled = false;
   }
