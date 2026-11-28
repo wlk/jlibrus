@@ -3,7 +3,7 @@ import { api, logout, setUnauthorizedHandler } from './api.js';
 import { h, mount, toast } from './dom.js';
 import { applyStaticLabels, lang, setLang, t } from './i18n.js';
 import { state, restoreChild, selectChild } from './state.js';
-import { ROUTES, currentRoute, renderRoute } from './router.js';
+import { ROUTES, currentRoute, renderRoute, supersedeRender } from './router.js';
 import { renderLogin } from './views/login.js';
 import { forgetEntryTypes } from './views/common.js';
 
@@ -22,6 +22,7 @@ function forgetCachedData() {
 }
 
 function showLogin() {
+  supersedeRender();
   forgetCachedData();
   forgetEntryTypes();
   topbar.hidden = true;
@@ -66,6 +67,7 @@ async function start() {
   buildChildSelect();
   buildNav();
   if (!state.childId && currentRoute().name !== 'settings') {
+    supersedeRender();
     mount(main, h('div', { class: 'card' }, t('noChildren')));
     return;
   }
