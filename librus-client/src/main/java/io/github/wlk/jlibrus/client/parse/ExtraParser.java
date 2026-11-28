@@ -61,7 +61,7 @@ public final class ExtraParser {
     private static Optional<SchoolTrip> trip(JsonNode t) {
         return Json.longValue(t, "id").map(id -> {
             LocalDate from = Json.date(t, "termFrom").orElse(null);
-            String creator = (Json.textOr(t, "creatorName", "") + " " + Json.textOr(t, "creatorLastName", "")).trim();
+            String creator = Json.fullName(t, "creatorName", "creatorLastName");
             String coordinator = Json.text(t, "coordinatorName").orElse(creator.isEmpty() ? null : creator);
             return new SchoolTrip(id, Json.textOr(t, "destination", ""), Json.textOr(t, "route", ""),
                     Json.textOr(t, "locomotion", ""), from, Json.date(t, "termTo").orElse(from), coordinator);

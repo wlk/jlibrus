@@ -82,6 +82,11 @@ public final class Json {
         return text(node, field).orElse(fallback);
     }
 
+    /** "First Last" from two name fields, either of which may be missing; empty when both are. */
+    public static String fullName(JsonNode node, String firstNameField, String lastNameField) {
+        return (textOr(node, firstNameField, "") + " " + textOr(node, lastNameField, "")).trim();
+    }
+
     /** Id of a reference object {@code {"Id": 123}} or {@code {"Id": "123"}}. */
     public static Optional<String> refId(JsonNode node, String field) {
         return refIdOf(node.get(field));

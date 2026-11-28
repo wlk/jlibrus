@@ -68,7 +68,7 @@ public final class TimetableParser {
     }
 
     private static String teacherName(JsonNode teacher) {
-        return (Json.textOr(teacher, "FirstName", "") + " " + Json.textOr(teacher, "LastName", "")).trim();
+        return Json.fullName(teacher, "FirstName", "LastName");
     }
 
     private static String blankToNull(String text) {

@@ -47,6 +47,16 @@ class JsonTest {
     }
 
     @Test
+    void fullNameJoinsWhicheverPartsArePresent() throws Exception {
+        JsonNode node = node("{\"f\":\"Anna\",\"l\":\" Nowak \",\"blank\":\" \"}");
+
+        assertThat(Json.fullName(node, "f", "l")).isEqualTo("Anna Nowak");
+        assertThat(Json.fullName(node, "f", "missing")).isEqualTo("Anna");
+        assertThat(Json.fullName(node, "blank", "l")).isEqualTo("Nowak");
+        assertThat(Json.fullName(node, "missing", "blank")).isEmpty();
+    }
+
+    @Test
     void flagsAcceptBooleansNumbersAndStrings() throws Exception {
         JsonNode node = node("{\"a\":true,\"b\":1,\"c\":\"1\",\"d\":\"true\",\"e\":0,\"f\":null,\"g\":false}");
 
