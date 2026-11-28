@@ -22,7 +22,6 @@ import java.util.Map;
  */
 final class SynergiaLogin {
 
-    static final int MAX_HOPS = 10;
     static final String CLIENT_ID = "46";
     static final List<String> SESSION_COOKIES = List.of("oauth_token", "DZIENNIKSID", "SDZIENNIKSID");
     private static final List<String> CAPTCHA_MARKERS = List.of("g-recaptcha", "recaptcha", "hcaptcha", "captcha");
@@ -42,7 +41,7 @@ final class SynergiaLogin {
         URI authorize = openEntryPoint();
         openAuthorizationForm(authorize);
         URI next = postCredentials(credentials);
-        followChain(next);
+        rejectCaptcha(http.followRedirects(next, endpoints::isTrustedLoginHop, "Librus login"));
         verifySession();
         activateGateway();
     }
@@ -91,19 +90,6 @@ final class SynergiaLogin {
         URI base = endpoints.oauthPath("/OAuth/Authorization?client_id=" + CLIENT_ID
                 + "&response_type=code&scope=mydata");
         return trusted(base.resolve(goTo));
-    }
-
-    private void followChain(URI start) {
-        URI current = start;
-        for (int hop = 0; hop < MAX_HOPS; hop++) {
-            HttpResult result = http.get(current);
-            if (!result.isRedirect()) {
-                rejectCaptcha(result);
-                return;
-            }
-            current = trusted(result.location().orElseThrow());
-        }
-        throw new LibrusException.ProtocolError("Librus login redirected more than " + MAX_HOPS + " times");
     }
 
     private void verifySession() {

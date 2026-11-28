@@ -106,6 +106,7 @@ class MessagesSendEdgeCasesTest {
         server.on("/wiadomosci3", Reply.html(200, "<h2 class=inside>Brak dostępu</h2>"));
 
         assertThatThrownBy(() -> messages.unreadCounts()).isInstanceOf(LibrusException.ModuleUnavailable.class);
+        assertThat(server.seen()).noneMatch(s -> s.path().startsWith("/api"));
     }
 
     @Test

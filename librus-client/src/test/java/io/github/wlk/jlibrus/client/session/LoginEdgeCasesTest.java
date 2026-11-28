@@ -131,7 +131,14 @@ class LoginEdgeCasesTest {
         server.happyLogin().on("/OAuth/Authorization/2FA", Reply.redirect(b + "/OAuth/Authorization/2FA"));
 
         assertThatThrownBy(this::login).isInstanceOf(LibrusException.ProtocolError.class).hasMessageContaining("10");
-        assertThat(server.count("/OAuth/Authorization/2FA")).isEqualTo(SynergiaLogin.MAX_HOPS);
+        assertThat(server.count("/OAuth/Authorization/2FA")).isEqualTo(HttpTransport.MAX_REDIRECTS);
+    }
+
+    @Test
+    void chainRedirectToForeignHostIsRefused() {
+        server.happyLogin().on("/OAuth/Authorization/2FA", Reply.redirect("https://evil.example/steal"));
+
+        assertThatThrownBy(this::login).isInstanceOf(LibrusException.ProtocolError.class).hasMessageContaining("evil.example");
     }
 
     @Test
