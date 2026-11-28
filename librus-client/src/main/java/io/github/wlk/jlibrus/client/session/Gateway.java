@@ -29,6 +29,11 @@ public final class Gateway {
         return session.exclusive(() -> call(resource, () -> fetch(resource)));
     }
 
+    /** Like {@link #get}, for modules a school may switch off: then (401/403/404) it reads as a missing node. */
+    public JsonNode getOrMissing(String resource) {
+        return Json.orMissing(() -> get(resource));
+    }
+
     /** POST with an empty JSON object to a read-only resource that requires POST, returning its JSON. */
     public JsonNode postForJson(String resource) {
         return session.exclusive(() -> call(resource, () ->

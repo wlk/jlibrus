@@ -1,6 +1,5 @@
 package io.github.wlk.jlibrus.client;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.wlk.jlibrus.client.http.HttpResult;
 import io.github.wlk.jlibrus.client.http.HttpTransport;
@@ -48,7 +47,6 @@ import java.time.temporal.TemporalAdjusters;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.function.Function;
 
 /**
  * Entry point: one Librus Synergia account (one child). Thread-safe; logs in lazily on first use and keeps the
@@ -111,7 +109,7 @@ public final class LibrusAccount {
     }
 
     public List<Classroom> classrooms() {
-        return optional("Classrooms", DictionaryParser::classrooms);
+        return DictionaryParser.classrooms(gateway.getOrMissing("Classrooms"));
     }
 
     public List<LessonAssignment> lessons() {
@@ -123,7 +121,7 @@ public final class LibrusAccount {
     }
 
     public List<GradeComment> gradeComments() {
-        return optional("Grades/Comments", DictionaryParser::gradeComments);
+        return DictionaryParser.gradeComments(gateway.getOrMissing("Grades/Comments"));
     }
 
     public List<AttendanceType> attendanceTypes() {
@@ -131,11 +129,11 @@ public final class LibrusAccount {
     }
 
     public List<EventCategory> eventCategories() {
-        return optional("HomeWorks/Categories", DictionaryParser::eventCategories);
+        return DictionaryParser.eventCategories(gateway.getOrMissing("HomeWorks/Categories"));
     }
 
     public List<NoteCategory> noteCategories() {
-        return optional("Notes/Categories", DictionaryParser::noteCategories);
+        return DictionaryParser.noteCategories(gateway.getOrMissing("Notes/Categories"));
     }
 
     public List<Grade> grades() {
@@ -143,7 +141,7 @@ public final class LibrusAccount {
     }
 
     public List<BehaviourPoint> behaviour() {
-        return optional("BehaviourGrades/Points", RecordParser::behaviourPoints);
+        return RecordParser.behaviourPoints(gateway.getOrMissing("BehaviourGrades/Points"));
     }
 
     public List<Attendance> attendances() {
@@ -151,56 +149,52 @@ public final class LibrusAccount {
     }
 
     public List<Note> notes() {
-        return optional("Notes", RecordParser::notes);
+        return RecordParser.notes(gateway.getOrMissing("Notes"));
     }
 
     public List<Announcement> announcements() {
-        return optional("SchoolNotices", RecordParser::announcements);
+        return RecordParser.announcements(gateway.getOrMissing("SchoolNotices"));
     }
 
     public Optional<LuckyNumber> luckyNumber() {
-        try {
-            return RecordParser.luckyNumber(gateway.get("LuckyNumbers"));
-        } catch (LibrusException.ModuleUnavailable e) {
-            return Optional.empty();
-        }
+        return RecordParser.luckyNumber(gateway.getOrMissing("LuckyNumbers"));
     }
 
     /** Lessons of the week containing {@code day}; empty when the timetable is not published. */
     public List<TimetableEntry> timetable(LocalDate day) {
         LocalDate monday = day.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
-        return optional("Timetables?weekStart=" + monday, TimetableParser::week);
+        return TimetableParser.week(gateway.getOrMissing("Timetables?weekStart=" + monday));
     }
 
     /** Calendar ("terminarz"): tests, quizzes, trips and other events. */
     public List<CalendarEvent> events() {
-        return optional("HomeWorks", CalendarParser::events);
+        return CalendarParser.events(gateway.getOrMissing("HomeWorks"));
     }
 
     public List<Homework> homework() {
-        return optional("HomeWorkAssignments", CalendarParser::homework);
+        return CalendarParser.homework(gateway.getOrMissing("HomeWorkAssignments"));
     }
 
     public List<ParentMeeting> parentMeetings() {
-        return optional("ParentTeacherConferences", CalendarParser::parentMeetings);
+        return CalendarParser.parentMeetings(gateway.getOrMissing("ParentTeacherConferences"));
     }
 
     public List<FreeDay> schoolFreeDays() {
-        return optional("SchoolFreeDays", CalendarParser::schoolFreeDays);
+        return CalendarParser.schoolFreeDays(gateway.getOrMissing("SchoolFreeDays"));
     }
 
     public List<TeacherAbsence> teacherAbsences() {
-        return optional("TeacherFreeDays", CalendarParser::teacherAbsences);
+        return CalendarParser.teacherAbsences(gateway.getOrMissing("TeacherFreeDays"));
     }
 
     /** Absence justifications the parent submitted, newest first, with the school's decision. */
     public List<Justification> justifications() {
-        return optional("Justifications", ExtraParser::justifications);
+        return ExtraParser.justifications(gateway.getOrMissing("Justifications"));
     }
 
     /** School trips registered by the school, soonest first. */
     public List<SchoolTrip> schoolTrips() {
-        return optional("SchoolTrips", ExtraParser::schoolTrips);
+        return ExtraParser.schoolTrips(gateway.getOrMissing("SchoolTrips"));
     }
 
     /**
@@ -230,15 +224,6 @@ public final class LibrusAccount {
     /** The messages module of this account. */
     public MessagesClient messages() {
         return messages;
-    }
-
-    /** Modules a school may switch off answer 401/403/404; treat that as "nothing there". */
-    private <T> List<T> optional(String resource, Function<JsonNode, List<T>> parser) {
-        try {
-            return parser.apply(gateway.get(resource));
-        } catch (LibrusException.ModuleUnavailable e) {
-            return List.of();
-        }
     }
 
     /** Configuration of a {@link LibrusAccount}; defaults talk to production Librus. */

@@ -10,7 +10,6 @@ import io.github.wlk.jlibrus.client.http.HttpResult;
 import io.github.wlk.jlibrus.client.parse.Json;
 import io.github.wlk.jlibrus.client.session.SynergiaSession;
 
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -57,11 +56,24 @@ public final class MessagesClient {
     }
 
     public List<Recipient> recipients(RecipientGroup group) {
+        return MessageParser.recipients(read(recipientsPath(group)), group);
+    }
+
+    /** Lists every recipient of every offered staff group, each person once; groups this account may not read are skipped. */
+    public List<Recipient> allRecipients() {
+        Set<String> seen = new HashSet<>();
+        return recipientGroups().stream()
+                .filter(group -> !RecipientGroups.SKIPPED.contains(group.id()))
+                .flatMap(group -> MessageParser.recipients(Json.orMissing(() -> read(recipientsPath(group))), group).stream())
+                .filter(recipient -> seen.add(recipient.accountId()))
+                .toList();
+    }
+
+    private static String recipientsPath(RecipientGroup group) {
         if (!Identifiers.isGroupId(group.id())) {
             throw new IllegalArgumentException("Invalid recipient group id");
         }
-        return MessageParser.recipients(
-                read("/receivers/groups/school-employees?receiverType=" + group.id()), group);
+        return "/receivers/groups/school-employees?receiverType=" + group.id();
     }
 
     /** Download link of an attachment (does not mark the message read). */
@@ -184,22 +196,5 @@ public final class MessagesClient {
         if (!Identifiers.isNumericId(id)) {
             throw new IllegalArgumentException("Message and attachment ids are numeric");
         }
-    }
-
-    /** Lists every recipient of every offered staff group, each person once. */
-    public List<Recipient> allRecipients() {
-        List<Recipient> result = new ArrayList<>();
-        Set<String> seen = new HashSet<>();
-        for (RecipientGroup group : recipientGroups()) {
-            if (RecipientGroups.SKIPPED.contains(group.id())) {
-                continue;
-            }
-            try {
-                recipients(group).stream().filter(r -> seen.add(r.accountId())).forEach(result::add);
-            } catch (LibrusException.ModuleUnavailable e) {
-                // a group this account may not read; skip it, the others still work
-            }
-        }
-        return List.copyOf(result);
     }
 }

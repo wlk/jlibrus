@@ -3,6 +3,7 @@ package io.github.wlk.jlibrus.client.parse;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.MissingNode;
 import io.github.wlk.jlibrus.client.LibrusException;
 
 import java.time.LocalDate;
@@ -13,6 +14,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 /**
  * Lenient readers for Librus JSON: ids may be numbers or strings, optional fields may be missing or null,
@@ -24,7 +26,7 @@ public final class Json {
     }
 
     /**
-     * Parses a Librus answer. Blank text yields a {@link com.fasterxml.jackson.databind.node.MissingNode};
+     * Parses a Librus answer. Blank text yields a {@link MissingNode};
      * malformed text throws what {@code failure} makes of the parse error.
      */
     public static JsonNode parse(ObjectMapper mapper, String text,
@@ -33,6 +35,18 @@ public final class Json {
             return mapper.readTree(text);
         } catch (JsonProcessingException e) {
             throw failure.apply(e);
+        }
+    }
+
+    /**
+     * Runs {@code read}; a module this account may not use (the school switched it off) reads as a
+     * {@link MissingNode}, which every parser reads as "nothing there".
+     */
+    public static JsonNode orMissing(Supplier<JsonNode> read) {
+        try {
+            return read.get();
+        } catch (LibrusException.ModuleUnavailable e) {
+            return MissingNode.getInstance();
         }
     }
 
